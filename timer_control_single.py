@@ -1,5 +1,7 @@
-# motor_control.py
-""" run dc motor(s) under PWM control """
+# timer_control_single.py
+""" run a dc motor under PWM control
+    - files 2298n.py and motor_ctrl.py must be uploaded to the Pico
+"""
 
 import asyncio
 from collections import namedtuple
