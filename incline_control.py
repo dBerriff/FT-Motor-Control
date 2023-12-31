@@ -1,9 +1,11 @@
 # motor_control.py
-""" run dc motor(s) under PWM control """
+""" run dc motor(s) under PWM control
+    - user button-press initiates motor movement
+    - work in progress; may include redundant code
+"""
 
 import asyncio
 from collections import namedtuple
-from micropython import const
 from l298n import L298N
 from motor_ctrl import MotorCtrl
 from buttons import Button
@@ -17,15 +19,17 @@ class Buttons:
 
     async def poll_buttons(self):
         """ start button polling """
-        # buttons: self poll to set state
+        # buttons: self-poll to set state
         asyncio.create_task(self.demand_btn.poll_state())
 
 
 async def main():
     """ test of motor control """
-    
+
+    Speed = namedtuple('Speed', ['f', 'r'])  # forward, reverse percentages
+
     async def run_incline(
-        demand_btn_, motor_a_, motor_b_, motor_a_speed_, motor_b_speed_):
+            demand_btn_, motor_a_, motor_b_, motor_a_speed_, motor_b_speed_):
         """ run the incline motors """
 
         hold_period = 5  # s hold speed steady
@@ -69,13 +73,10 @@ async def main():
             await asyncio.sleep(5)
             demand_btn_.press_ev.clear()
 
-
     # see PWM slice: frequency shared
     pwm_pins = (2, 3)
     motor_pins = (4, 5, 6, 7)
     pulse_f = 15_000  # adjust for physical motor and controller
-    Speed = namedtuple('Speed', ['f', 'r'])  # forward, reverse percentages
-
 
     controller = L298N(pwm_pins, motor_pins, pulse_f)
     motor_a = MotorCtrl(controller.channel_a, name='A', start_pc=25)
