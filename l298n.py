@@ -1,5 +1,8 @@
 # l298n.py
-""" model L298N motor controller """
+""" model L298N motor controller
+    - developed for Famous Trains Derby by David Jones
+    - shared with MERG by member 9042
+"""
 
 from machine import Pin, PWM
 

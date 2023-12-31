@@ -1,5 +1,8 @@
 # motor_control.py
-""" run dc motor(s) under PWM control """
+""" run dc motor(s) under PWM control
+    - developed for Famous Trains Derby by David Jones
+    - shared with MERG by member 9042
+"""
 
 import asyncio
 
