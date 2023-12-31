@@ -13,6 +13,8 @@ from motor_ctrl import MotorCtrl
 
 async def main():
     """ test of motor control """
+
+    Speed = namedtuple('Speed', ['f', 'r'])  # forward, reverse percentages
     
     async def run_sequence(motor_, motor_speed_, steady_period=15):
         """ run the locomotive """
@@ -32,8 +34,6 @@ async def main():
         await asyncio.sleep(steady_period)
         print('Decelerate')
         await motor_.accel(0)
-
-    Speed = namedtuple('Speed', ['f', 'r'])  # forward, reverse percentages
 
     pwm_pins = (2, 3)
     motor_pins = (4, 5, 6, 7)

@@ -11,9 +11,8 @@ class L298nChannel:
     """ L298N H-bridge channel
         - states: 'F': forward, 'R': reverse, 'S': stopped
         - frequency and duty cycle: no range checking
-        - if using Pi Pico, 2 PWM "slice" channels share the same frequency
+        - RP2040 processor: 2 PWM "slice" channels share a common frequency
         -- slices are pins (0 and 1), (2 and 3), ...
-        - no range check on frequency
     """
 
     def __init__(self, pwm_pin, motor_pins_, frequency):
