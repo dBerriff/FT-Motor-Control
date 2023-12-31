@@ -23,7 +23,6 @@ async def main():
         await motor_.accel(0)
         print('Pause')
         await asyncio.sleep(15)
-        
         motor_.set_state('R')
         print('Accelerate')
         await motor_.accel(motor_speed_.r)
@@ -33,26 +32,24 @@ async def main():
         await motor_.accel(0)
 
     Speed = namedtuple('Speed', ['f', 'r'])  # forward, reverse percentages
-    
+
     pwm_pins = (2, 3)
     motor_pins = (4, 5, 6, 7)
     pulse_freq = 15_000  # adjust for physical motor and controller
 
     controller = L298N(pwm_pins, motor_pins, pulse_freq)
-    motor_a = MotorCtrl(controller.channel_a, name='A', start_pc=25)
-    # establish initial state
-    await motor_a.stop()
+    motor = MotorCtrl(controller.channel_a, name='A', start_pc=25)
+    motor_speeds = Speed(f=75, r=30)
 
-    motor_a_speed = Speed(f=75, r=30)
-    
-    await asyncio.sleep(10)
+    # initialise state
+    await motor.stop()
 
     for _ in range(5):
-        await run_sequence(motor_a, motor_a_speed)
-        await asyncio.sleep(10)
+        await run_sequence(motor, motor_speeds)
+        print('Pause')
+        await asyncio.sleep(15)
 
-    motor_a.set_logic_off()
-    await asyncio.sleep_ms(20)
+    motor.set_logic_off()
 
 if __name__ == '__main__':
     try:

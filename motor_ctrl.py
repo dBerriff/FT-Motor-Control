@@ -5,7 +5,10 @@ import asyncio
 
 
 class MotorCtrl:
-    """ control speed and direction of dc motor """
+    """ control state/direction and speed of a motor
+        - negative speeds are not supported
+        - call set_state() to change direction
+    """
     
     @staticmethod
     def pc_u16(percentage):
@@ -14,7 +17,7 @@ class MotorCtrl:
     def __init__(self, channel, name, start_pc=0):
         self.channel = channel
         self.name = name  # for print or logging
-        self.start_u16 = self.pc_u16(start_pc)
+        self.start_u16 = self.pc_u16(start_pc)  # start-up speed
         self.state = ''
         self.speed_u16 = 0
 
@@ -28,23 +31,32 @@ class MotorCtrl:
         self.channel.set_dc_u16(dc_u16)
         self.speed_u16 = dc_u16
 
-    async def accel(self, target_pc, n_steps=25):
-        """ accelerate from stop to target speed over n_steps """
-        target_u16 = self.pc_u16(target_pc)
+    async def accel(self, target_pc, trans_period_ms=5_000):
+        """ accelerate from current to target speed in trans_period_ms
+            - supports (target < current) for deceleration
+        """
+        # consider passing period as parameter
+        n_steps = 25
+        target_u16 = abs(self.pc_u16(target_pc))
+        # check for start from rest
+        if self.speed_u16 == 0 and target_u16 > 0:
+            self.speed_u16 = self.start_u16
         step = (target_u16 - self.speed_u16) // n_steps
-        for speed in range(self.speed_u16, target_u16, step):
-            self.rotate(speed)
-            await asyncio.sleep_ms(5000//n_steps)  # period // n_steps
+        # check for stepped acceleration
+        if step != 0:
+            for speed in range(self.speed_u16, target_u16, step):
+                self.rotate(speed)
+                await asyncio.sleep_ms(trans_period_ms // n_steps)  # period // n_steps
         self.rotate(target_u16)
 
     async def halt(self):
-        """ set speed instantly to 0 but retain state """
+        """ set speed immediately to 0 but retain state """
         self.rotate(0)
-        # allow some time to halt
+        # allow a few ms for the motor to stop
         await asyncio.sleep_ms(500)
 
     async def stop(self):
-        """ set state to 'S', halt the motor """
+        """ set state to 'S'; halt the motor """
         self.set_state('S')
         await self.halt()
 

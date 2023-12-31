@@ -13,7 +13,6 @@ class L298nChannel:
         - no range check on frequency
     """
 
-
     def __init__(self, pwm_pin, motor_pins_, frequency):
         self.enable = PWM(Pin(pwm_pin))  # L298N pins are labelled 'EN'
         self.sw_1 = Pin(motor_pins_[0], Pin.OUT)
@@ -57,7 +56,6 @@ class L298N:
         -- pwm_pins => (ENA, ENB)
         -- sw_pins  => (IN1, IN2, IN3, IN4)
     """
-
 
     def __init__(self, pwm_pins_, sw_pins_, f):
 
