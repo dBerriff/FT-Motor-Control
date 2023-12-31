@@ -16,7 +16,7 @@ async def main():
 
     Speed = namedtuple('Speed', ['f', 'r'])  # forward, reverse percentages
     
-    async def run_sequence(motor_, motor_speed_, steady_period=15):
+    async def run_sequence(motor_, motor_speed_, steady_period=60):
         """ run the locomotive """
         motor_.set_state('F')
         print('Accelerate')
@@ -26,7 +26,7 @@ async def main():
         print('Decelerate')
         await motor_.accel(0)
         print('Pause')
-        await asyncio.sleep(15)
+        await asyncio.sleep(30)
         motor_.set_state('R')
         print('Accelerate')
         await motor_.accel(motor_speed_.r)
@@ -49,7 +49,7 @@ async def main():
     for _ in range(5):
         await run_sequence(motor, motor_speeds)
         print('Pause')
-        await asyncio.sleep(15)
+        await asyncio.sleep(30)
 
     motor.set_logic_off()
 

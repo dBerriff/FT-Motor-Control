@@ -11,7 +11,7 @@ from motor_ctrl import MotorCtrl
 from buttons import Button
 
 
-class Buttons:
+class InputButtons:
     """ input buttons """
 
     def __init__(self, pins_):
@@ -38,30 +38,30 @@ async def main():
             print('Waiting for button press...')
             await demand_btn_.press_ev.wait()
             if state_ != 'F':
-                print('Move forward')
+                print('Move Forward  ')
                 state_ = 'F'
                 motor_a_.set_state('F')
-                motor_b_.set_state('R')
+                motor_b_.set_state('F')
                 print('Accelerate')
                 await asyncio.gather(
                     motor_a_.accel(motor_a_speed_.f),
-                    motor_b_.accel(motor_b_speed_.r))
-                print('Hold')
+                    motor_b_.accel(motor_b_speed_.f))
+                print(f'Hold A: {motor_a_.speed_u16} B: {motor_b_.speed_u16}')
                 await asyncio.sleep(hold_period)
                 print('Decelerate')
                 await asyncio.gather(
                     motor_a_.accel(0),
                     motor_b_.accel(0))
             else:
-                print('Move in reverse')
+                print('Move Reverse')
                 state_ = 'R'
                 motor_a_.set_state('R')
-                motor_b_.set_state('F')
+                motor_b_.set_state('R')
                 print('Accelerate')
                 await asyncio.gather(
                     motor_a_.accel(motor_a_speed_.r),
-                    motor_b_.accel(motor_b_speed_.f))
-                print('Hold')
+                    motor_b_.accel(motor_b_speed_.r))
+                print(f'Hold A: {motor_a_.speed_u16} B: {motor_b_.speed_u16}')
                 await asyncio.sleep(hold_period)
                 print('Decelerate')
                 await asyncio.gather(
@@ -85,12 +85,12 @@ async def main():
     await motor_a.stop()
     await motor_b.stop()
 
-    ctrl_buttons = Buttons([20])
+    ctrl_buttons = InputButtons([20])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
     demand_btn = ctrl_buttons.demand_btn
 
-    motor_a_speed = Speed(f=50, r=50)
-    motor_b_speed = Speed(f=50, r=50)
+    motor_a_speed = Speed(f=100, r=30)
+    motor_b_speed = Speed(f=30, r=100)
 
     await run_incline(demand_btn, motor_a, motor_b, motor_a_speed, motor_b_speed)
 
