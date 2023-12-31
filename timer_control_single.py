@@ -1,6 +1,8 @@
 # timer_control_single.py
 """ run a dc motor under PWM control
     - files 2298n.py and motor_ctrl.py must be uploaded to the Pico
+    - developed for Famous Trains Derby by David Jones
+    - shared with MERG by member 9042
 """
 
 import asyncio
