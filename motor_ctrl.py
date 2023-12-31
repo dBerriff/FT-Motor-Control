@@ -47,21 +47,20 @@ class MotorCtrl:
         step = (target_u16 - self.speed_u16) // n_steps
         # check for stepped acceleration
         if step != 0:
+            pause_ms = trans_period_ms // n_steps
             for speed in range(self.speed_u16, target_u16, step):
                 self.rotate(speed)
-                await asyncio.sleep_ms(trans_period_ms // n_steps)  # period // n_steps
+                await asyncio.sleep_ms(pause_ms)
         self.rotate(target_u16)
 
     async def halt(self):
         """ set speed immediately to 0 but retain state """
         self.rotate(0)
-        # allow a few ms for the motor to stop
-        await asyncio.sleep_ms(500)
 
     async def stop(self):
         """ set state to 'S'; halt the motor """
         self.set_state('S')
-        await self.halt()
+        self.rotate(0)
 
     def set_logic_off(self):
         """ turn off channel logic """
