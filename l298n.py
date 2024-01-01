@@ -15,6 +15,9 @@ class L298nChannel:
         -- slices are pins (0 and 1), (2 and 3), ...
     """
 
+    # for (IN1, IN2) or (IN3, IN4)
+    STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1)}
+
     def __init__(self, pwm_pin, motor_pins_, frequency):
         self.enable = PWM(Pin(pwm_pin))  # L298N pins are labelled 'EN'
         self.sw_1 = Pin(motor_pins_[0], Pin.OUT)
@@ -32,15 +35,11 @@ class L298nChannel:
 
     def set_state(self, state):
         """ set H-bridge switch states """
-        if state == 'F':
-            self.sw_1.value(1)
-            self.sw_2.value(0)
-        elif state == 'R':
-            self.sw_1.value(0)
-            self.sw_2.value(1)
-        elif state == 'S':
-            self.sw_1.value(1)
-            self.sw_2.value(1)
+        if state in self.STATES:
+            sw_in = self.STATES[state]
+            print(f'Setting states: {self.sw_1} {self.sw_2} {sw_in}')
+            self.sw_1.value(sw_in[0])
+            self.sw_2.value(sw_in[1])
 
     def set_logic_off(self):
         """ set all logic output off """

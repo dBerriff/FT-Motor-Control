@@ -68,10 +68,13 @@ async def main():
                     motor_a_.accel(0),
                     motor_b_.accel(0))
 
+            # not strictly required but set state 'S'
+            await motor_a.stop()
+            await motor_b.stop()
             # block button response
             print('Blocking button response')
             await asyncio.sleep(5)
-            demand_btn_.press_ev.clear()
+            demand_btn_.press_ev.clear()  # clear any intervening press
 
     # see PWM slice: frequency shared
     pwm_pins = (2, 3)
@@ -81,7 +84,8 @@ async def main():
     controller = L298N(pwm_pins, motor_pins, pulse_f)
     motor_a = MotorCtrl(controller.channel_a, name='A', start_pc=25)
     motor_b = MotorCtrl(controller.channel_b, name='B', start_pc=25)
-    # establish initial state
+
+    # set initial state 'S'
     await motor_a.stop()
     await motor_b.stop()
 
