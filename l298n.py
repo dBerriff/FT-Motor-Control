@@ -9,14 +9,14 @@ from machine import Pin, PWM
 
 class L298nChannel:
     """ L298N H-bridge channel
-        - states: 'F': forward, 'R': reverse, 'S': stopped
+        - states: 'S': stopped, 'F': forward, 'R': reverse, ('H': halt)
         - frequency and duty cycle: no range checking
         - RP2040 processor: 2 PWM "slice" channels share a common frequency
         -- slices are pins (0 and 1), (2 and 3), ...
     """
 
     # for (IN1, IN2) or (IN3, IN4)
-    STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1)}
+    STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0)}
 
     def __init__(self, pwm_pin, motor_pins_, frequency):
         self.enable = PWM(Pin(pwm_pin))  # L298N pins are labelled 'EN'
