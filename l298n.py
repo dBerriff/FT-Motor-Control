@@ -9,7 +9,7 @@ from machine import Pin, PWM
 
 class L298nChannel:
     """ L298N H-bridge channel
-        - states: 'S': stopped, 'F': forward, 'R': reverse, ('H': halt)
+        - states: 'S': stopped, 'F': forward, 'R': reverse (, 'H': halt)
         - frequency and duty cycle: no range checking
         - RP2040 processor: 2 PWM "slice" channels share a common frequency
         -- slices are pins (0 and 1), (2 and 3), ...
