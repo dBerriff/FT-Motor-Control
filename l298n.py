@@ -10,6 +10,7 @@ from machine import Pin, PWM
 class L298nChannel:
     """ L298N H-bridge channel
         - states: 'S': stopped, 'F': forward, 'R': reverse (, 'H': halt)
+        -- 'H' for possible future use
         - frequency and duty cycle: no range checking
         - RP2040 processor: 2 PWM "slice" channels share a common frequency
         -- slices are pins (0 and 1), (2 and 3), ...
@@ -19,11 +20,9 @@ class L298nChannel:
     STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0)}
 
     def __init__(self, pwm_pin, motor_pins_, frequency):
-        self.enable = PWM(Pin(pwm_pin))  # L298N pins are labelled 'EN'
+        self.enable = PWM(Pin(pwm_pin), freq=frequency, duty_u16=0)
         self.sw_1 = Pin(motor_pins_[0], Pin.OUT)
         self.sw_2 = Pin(motor_pins_[1], Pin.OUT)
-        self.set_freq(frequency)
-        self.set_dc_u16(0)
 
     def set_freq(self, frequency):
         """ set pulse frequency """
@@ -36,10 +35,10 @@ class L298nChannel:
     def set_state(self, state):
         """ set H-bridge switch states """
         if state in self.STATES:
-            sw_in = self.STATES[state]
-            print(f'Setting states: {self.sw_1} {self.sw_2} {sw_in}')
-            self.sw_1.value(sw_in[0])
-            self.sw_2.value(sw_in[1])
+            state = state.upper()
+            in_0, in_1 = self.STATES[state]
+            self.sw_1.value(in_0)
+            self.sw_2.value(in_1)
 
     def set_logic_off(self):
         """ set all logic output off """

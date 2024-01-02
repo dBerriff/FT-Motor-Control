@@ -34,7 +34,7 @@ class MotorCtrl:
         self.channel.set_dc_u16(dc_u16)
         self.speed_u16 = dc_u16
 
-    async def accel(self, target_pc, trans_period_ms=5_000):
+    async def accel(self, target_pc, period_ms=1_000):
         """ accelerate from current to target speed in trans_period_ms
             - supports (target < current) for deceleration
         """
@@ -47,7 +47,7 @@ class MotorCtrl:
         step = (target_u16 - self.speed_u16) // n_steps
         # check for stepped acceleration
         if step != 0:
-            pause_ms = trans_period_ms // n_steps
+            pause_ms = period_ms // n_steps
             for speed in range(self.speed_u16, target_u16, step):
                 self.rotate(speed)
                 await asyncio.sleep_ms(pause_ms)

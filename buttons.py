@@ -16,6 +16,7 @@ class Button:
         self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
         self.state = 0
         self.press_ev = asyncio.Event()
+        self.press_ev.clear()
 
     async def poll_state(self):
         """ poll self for press or hold events
