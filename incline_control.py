@@ -87,8 +87,6 @@ async def main():
             await asyncio.sleep(block_period)
             demand_btn_.press_ev.clear()  # clear any intervening press
 
-    loop = asyncio.get_event_loop()
-
     # === parameters
 
     pwm_pins = (2, 3)
