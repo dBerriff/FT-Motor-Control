@@ -1,5 +1,6 @@
 # motor_control.py
 """ run 2 x dc motor under PWM control
+    - developed using MicroPython v1.22.0
     - user button-press initiates motor movement
     - moves Forward and Reverse alternatively
     - subsequent button-press is blocked for a set period
@@ -34,10 +35,9 @@ async def main():
 
     async def monitor_kill(kill_btn_):
         """ monitor for kill-button press """
-        while True:
-            await kill_btn_.press_ev.wait()
-            kill_btn_.press_ev.clear()
-            print('Kill button pressed')
+        await kill_btn_.press_ev.wait()
+        kill_btn_.press_ev.clear()
+        print('Kill button pressed - switching off control board and program')
 
     async def run_incline(
             demand_btn_, motor_a_, motor_b_, motor_a_speed_, motor_b_speed_, led_):
@@ -88,7 +88,6 @@ async def main():
             demand_btn_.press_ev.clear()  # clear any intervening press
 
     loop = asyncio.get_event_loop()
-    help(loop)
 
     # === parameters
 
@@ -116,11 +115,13 @@ async def main():
 
     ctrl_buttons = InputButtons(run_btn, kill_btn)
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
-    asyncio.create_task(monitor_kill(ctrl_buttons.kill_btn))
 
-    await run_incline(ctrl_buttons.run_btn, motor_a, motor_b, motor_a_speed, motor_b_speed, onboard)
-
-    motor_a.set_logic_off()
+    asyncio.create_task(
+        run_incline(ctrl_buttons.run_btn, motor_a, motor_b, motor_a_speed, motor_b_speed, onboard))
+    await monitor_kill(ctrl_buttons.kill_btn)
+    
+    controller.set_logic_off()
+    await asyncio.sleep_ms(20)
 
 if __name__ == '__main__':
     try:

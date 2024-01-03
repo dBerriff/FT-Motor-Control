@@ -1,5 +1,6 @@
 # motor_control.py
 """ run dc motor(s) under PWM control
+    - developed using MicroPython v1.22.0
     - developed for Famous Trains Derby by David Jones
     - shared with MERG by member 9042
 """
