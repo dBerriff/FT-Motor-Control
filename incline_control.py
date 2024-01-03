@@ -33,18 +33,21 @@ async def main():
 
     Speed = namedtuple('Speed', ['f', 'r'])  # forward, reverse percentages
 
-    async def monitor_kill(kill_btn_):
-        """ monitor for kill-button press """
+    async def monitor_kill_btn(kill_btn_, controller_):
+        """ monitor for kill-button press
+            - this Event should invoke layout switch-off
+        """
         await kill_btn_.press_ev.wait()
         kill_btn_.press_ev.clear()
-        print('Kill button pressed - switch control board OFF and stop program execution')
+        controller_.set_logic_off()
+        print('Kill button pressed - control board logic switched OFF')
 
     async def run_incline(
             demand_btn_, motor_a_, motor_b_, motor_a_speed_, motor_b_speed_, led_):
         """ run the incline motors under button control """
 
         block_period = 5  # s; block next button press
-        hold_period = 1  # s; hold speed steady
+        hold_period = 2  # s; hold speed steady
         state_ = 'S'
         while True:
             print('Waiting for button press...')
@@ -94,10 +97,9 @@ async def main():
     run_btn = 20
     kill_btn = 22
 
-    # Tenshodo motor bogies develop more torque at lower frequencies
     pulse_f = 15_000  # adjust for physical motor and controller
     motor_start_pc = 30
-    motor_a_speed = Speed(f=95, r=95)
+    motor_a_speed = Speed(f=100, r=95)
     motor_b_speed = Speed(f=95, r=95)
 
     # ===
@@ -117,10 +119,9 @@ async def main():
 
     asyncio.create_task(
         run_incline(ctrl_buttons.run_btn, motor_a, motor_b, motor_a_speed, motor_b_speed, onboard))
-    await monitor_kill(ctrl_buttons.kill_btn)
+    await monitor_kill_btn(ctrl_buttons.kill_btn, controller)
     
     # kill button has been pushed
-    controller.set_logic_off()
     await asyncio.sleep_ms(20)
 
 if __name__ == '__main__':
