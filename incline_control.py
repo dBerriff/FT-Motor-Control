@@ -43,11 +43,12 @@ async def main():
         print('Kill button pressed - control board logic switched OFF')
 
     async def run_incline(
-            demand_btn_, motor_a_, motor_b_, motor_a_speed_, motor_b_speed_, led_):
+            demand_btn_,
+            motor_a_, motor_b_, motor_a_speed_, motor_b_speed_, hold_period_,
+            led_):
         """ run the incline motors under button control """
 
         block_period = 5  # s; block next button press
-        hold_period = 2  # s; hold speed steady
         state_ = 'S'
         while True:
             print('Waiting for button press...')
@@ -63,7 +64,7 @@ async def main():
                 await asyncio.gather(
                     motor_a_.accel(motor_a_speed_.f),
                     motor_b_.accel(motor_b_speed_.f))
-                await asyncio.sleep(hold_period)
+                await asyncio.sleep(hold_period_)
                 print('Decelerate')
                 await asyncio.gather(
                     motor_a_.accel(0),
@@ -77,7 +78,7 @@ async def main():
                 await asyncio.gather(
                     motor_a_.accel(motor_a_speed_.r),
                     motor_b_.accel(motor_b_speed_.r))
-                await asyncio.sleep(hold_period)
+                await asyncio.sleep(hold_period_)
                 print('Decelerate')
                 await asyncio.gather(
                     motor_a_.accel(0),
@@ -97,10 +98,11 @@ async def main():
     run_btn = 20
     kill_btn = 22
 
-    pulse_f = 15_000  # adjust for physical motor and controller
+    pulse_f = 500  # adjust for physical motor and controller
     motor_start_pc = 30
     motor_a_speed = Speed(f=100, r=95)
     motor_b_speed = Speed(f=95, r=95)
+    motor_hold_period = 5
 
     # ===
     
@@ -118,7 +120,9 @@ async def main():
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
 
     asyncio.create_task(
-        run_incline(ctrl_buttons.run_btn, motor_a, motor_b, motor_a_speed, motor_b_speed, onboard))
+        run_incline(ctrl_buttons.run_btn,
+                    motor_a, motor_b, motor_a_speed, motor_b_speed, motor_hold_period,
+                    onboard))
     await monitor_kill_btn(ctrl_buttons.kill_btn, controller)
     
     # kill button has been pushed
