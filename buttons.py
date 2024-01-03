@@ -11,6 +11,7 @@ class Button:
     PIN_ON = const(0)
     PIN_OFF = const(1)
     CLICK = const(1)
+    POLL_INTERVAL = const(20)  # ms
 
     def __init__(self, pin):
         self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
@@ -30,7 +31,7 @@ class Button:
                     self.state = self.CLICK
                     self.press_ev.set()
                 prev_pin_state = pin_state
-            await asyncio.sleep_ms(20)
+            await asyncio.sleep_ms(self.POLL_INTERVAL)
 
     def clear_state(self):
         """ set state to 0 """

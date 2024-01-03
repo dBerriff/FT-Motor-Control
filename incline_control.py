@@ -37,13 +37,13 @@ async def main():
         """ monitor for kill-button press """
         await kill_btn_.press_ev.wait()
         kill_btn_.press_ev.clear()
-        print('Kill button pressed - switching off control board and program')
+        print('Kill button pressed - switch control board OFF and stop program execution')
 
     async def run_incline(
             demand_btn_, motor_a_, motor_b_, motor_a_speed_, motor_b_speed_, led_):
         """ run the incline motors under button control """
 
-        block_period = 10  # s; block next button press
+        block_period = 5  # s; block next button press
         hold_period = 1  # s; hold speed steady
         state_ = 'S'
         while True:
@@ -96,10 +96,11 @@ async def main():
     run_btn = 20
     kill_btn = 22
 
-    pulse_f = 400  # adjust for physical motor and controller
+    # Tenshodo motor bogies develop more torque at lower frequencies
+    pulse_f = 15_000  # adjust for physical motor and controller
     motor_start_pc = 30
-    motor_a_speed = Speed(f=75, r=75)
-    motor_b_speed = Speed(f=75, r=75)
+    motor_a_speed = Speed(f=95, r=95)
+    motor_b_speed = Speed(f=95, r=95)
 
     # ===
     
@@ -120,6 +121,7 @@ async def main():
         run_incline(ctrl_buttons.run_btn, motor_a, motor_b, motor_a_speed, motor_b_speed, onboard))
     await monitor_kill(ctrl_buttons.kill_btn)
     
+    # kill button has been pushed
     controller.set_logic_off()
     await asyncio.sleep_ms(20)
 
