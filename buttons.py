@@ -20,7 +20,7 @@ class Button:
         self.press_ev.clear()
 
     async def poll_state(self):
-        """ poll self for press or hold events
+        """ poll self for click event
             - button state must be cleared by event handler
         """
         prev_pin_state = self.PIN_OFF
@@ -49,7 +49,7 @@ class HoldButton(Button):
         super().__init__(pin)
 
     async def poll_state(self):
-        """ poll self for press or hold events
+        """ poll self for click or hold events
             - button state must be cleared by event handler
         """
         on_time = None
