@@ -60,8 +60,8 @@ async def main():
                 motor_b_.set_state('F')
                 print('Accelerate')
                 await asyncio.gather(
-                    motor_a_.accel(motor_a_speed_[0]),
-                    motor_b_.accel(motor_b_speed_[0]))
+                    motor_a_.accel(motor_a_speed_['f']),
+                    motor_b_.accel(motor_b_speed_['f']))
                 await asyncio.sleep(hold_period_)
                 print('Decelerate')
                 await asyncio.gather(
@@ -74,8 +74,8 @@ async def main():
                 motor_b_.set_state('R')
                 print('Accelerate')
                 await asyncio.gather(
-                    motor_a_.accel(motor_a_speed_[1]),
-                    motor_b_.accel(motor_b_speed_[1]))
+                    motor_a_.accel(motor_a_speed_['r']),
+                    motor_b_.accel(motor_b_speed_['r']))
                 await asyncio.sleep(hold_period_)
                 print('Decelerate')
                 await asyncio.gather(
@@ -96,8 +96,8 @@ async def main():
         'kill_btn': 22,
         'pulse_f': 500,
         'motor_start_pc': 30,
-        'motor_a_speed': (100, 95),  # F, R
-        'motor_b_speed': (95, 95),  # F, R
+        'motor_a_speed': {'f': 100, 'r': 95},
+        'motor_b_speed': {'f': 95, 'r': 95},
         'motor_hold_period': 5
     }
     
