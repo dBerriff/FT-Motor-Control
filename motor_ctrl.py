@@ -16,6 +16,8 @@ class MotorCtrl:
     
     @staticmethod
     def pc_u16(percentage):
+        percentage = max(0, percentage)
+        percentage = min(100, percentage)
         return 0xffff * percentage // 100
 
     def __init__(self, channel, name, start_pc=0):
@@ -41,7 +43,7 @@ class MotorCtrl:
         """
         # consider passing period as parameter
         n_steps = 25
-        target_u16 = abs(self.pc_u16(target_pc))
+        target_u16 = self.pc_u16(target_pc)
         # check for start from rest
         if self.speed_u16 == 0 and target_u16 > 0:
             self.speed_u16 = self.start_u16
