@@ -50,5 +50,3 @@ class LedFlash:
             level_ = self.adc.read_u16()
             if level_ > ref_u16:
                 asyncio.create_task(self.led.flash(min((level_ - ref_u16), 200)))
-
-

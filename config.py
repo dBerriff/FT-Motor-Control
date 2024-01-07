@@ -32,4 +32,3 @@ class ConfigFile:
     def is_file(f):
         """ check if config file exists """
         return f in os.listdir()
-

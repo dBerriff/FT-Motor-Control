@@ -60,13 +60,13 @@ async def main():
                 motor_b_.set_state('F')
                 print('Accelerate')
                 await asyncio.gather(
-                    motor_a_.accel(motor_a_speed_['f']),
-                    motor_b_.accel(motor_b_speed_['f']))
+                    motor_a_.accel_u16(motor_a_speed_['f']),
+                    motor_b_.accel_u16(motor_b_speed_['f']))
                 await asyncio.sleep(hold_period_)
                 print('Decelerate')
                 await asyncio.gather(
-                    motor_a_.accel(0),
-                    motor_b_.accel(0))
+                    motor_a_.accel_u16(0),
+                    motor_b_.accel_u16(0))
             else:
                 print('Move Reverse')
                 state_ = 'R'
@@ -74,17 +74,17 @@ async def main():
                 motor_b_.set_state('R')
                 print('Accelerate')
                 await asyncio.gather(
-                    motor_a_.accel(motor_a_speed_['r']),
-                    motor_b_.accel(motor_b_speed_['r']))
+                    motor_a_.accel_u16(motor_a_speed_['r']),
+                    motor_b_.accel_u16(motor_b_speed_['r']))
                 await asyncio.sleep(hold_period_)
                 print('Decelerate')
                 await asyncio.gather(
-                    motor_a_.accel(0),
-                    motor_b_.accel(0))
+                    motor_a_.accel_u16(0),
+                    motor_b_.accel_u16(0))
 
             # not strictly required but set state 'S'
-            await motor_a.stop()
-            await motor_b.stop()
+            motor_a.stop()
+            motor_b.stop()
             # block button response
             await asyncio.sleep(block_period)
             demand_btn_.press_ev.clear()  # clear any intervening press
@@ -106,12 +106,11 @@ async def main():
     onboard = Led('LED')
 
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
-    motor_a = MotorCtrl(controller.channel_a, name='A', start_pc=params['motor_start_pc'])
-    motor_b = MotorCtrl(controller.channel_b, name='B', start_pc=params['motor_start_pc'])
-
+    motor_a = MotorCtrl(controller.channel_a, name='A', min_pc=params['motor_start_pc'])
+    motor_b = MotorCtrl(controller.channel_b, name='B', min_pc=params['motor_start_pc'])
     # set initial state to 'S'
-    await motor_a.stop()
-    await motor_b.stop()
+    motor_a.stop()
+    motor_b.stop()
 
     ctrl_buttons = InputButtons(params['run_btn'], params['kill_btn'])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll

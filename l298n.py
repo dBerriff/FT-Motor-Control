@@ -18,22 +18,25 @@ class L298nChannel:
     """
 
     # for (IN1, IN2) or (IN3, IN4)
-    STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0),
-              's': (1, 1), 'f': (1, 0), 'r': (0, 1), 'h': (0, 0)
-              }
+    # swap 'F' and 'R' values to reverse polarity
+    STATES = {
+        'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0),
+        's': (1, 1), 'f': (1, 0), 'r': (0, 1), 'h': (0, 0)
+    }
+    STATES_SET = {key for key in STATES}
 
     def __init__(self, pwm_pin, motor_pins_, frequency):
-        self.enable = PWM(Pin(pwm_pin), freq=frequency, duty_u16=0)
+        self.en = PWM(Pin(pwm_pin), freq=frequency, duty_u16=0)
         self.sw_0 = Pin(motor_pins_[0], Pin.OUT)
         self.sw_1 = Pin(motor_pins_[1], Pin.OUT)
 
     def set_freq(self, frequency):
         """ set pulse frequency """
-        self.enable.freq(frequency)
+        self.en.freq(frequency)
 
     def set_dc_u16(self, dc_u16):
         """ set duty cycle by 16-bit unsigned integer """
-        self.enable.duty_u16(dc_u16)
+        self.en.duty_u16(dc_u16)
 
     def set_state(self, state):
         """ set H-bridge switch states """
@@ -69,7 +72,7 @@ class L298N:
         self.channel_b = L298nChannel(
             pwm_pins_[1], (sw_pins_[2], sw_pins_[3]), f)
 
-        print(f'L298N initialised: {pwm_pins_}; {sw_pins_}; {self.channel_a.enable.freq()}')
+        print(f'L298N initialised: {pwm_pins_}; {sw_pins_}; {self.channel_a.en.freq()}')
 
     def set_logic_off(self):
         """ set all control inputs off (0) """

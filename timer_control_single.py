@@ -20,20 +20,20 @@ async def main():
         """ run the locomotive """
         motor_.set_state('F')
         print('Accelerate')
-        await motor_.accel(motor_speed_.f, 1000)
+        await motor_.accel_u16(motor_speed_.f, 1000)
         print('Hold speed')
         await asyncio.sleep(steady_period)
         print('Decelerate')
-        await motor_.accel(0, 1000)
+        await motor_.accel_u16(0, 1000)
         print('Pause')
         await asyncio.sleep(5)
         motor_.set_state('R')
         print('Accelerate')
-        await motor_.accel(motor_speed_.r, 1000)
+        await motor_.accel_u16(motor_speed_.r, 1000)
         print('Hold speed')
         await asyncio.sleep(steady_period)
         print('Decelerate')
-        await motor_.accel(0, 1000)
+        await motor_.accel_u16(0, 1000)
 
     # === parameters
 
@@ -46,11 +46,10 @@ async def main():
     # ===
 
     controller = L298N(pwm_pins, motor_pins, pulse_freq)
-    motor = MotorCtrl(controller.channel_a, name='A', start_pc=25)
+    motor = MotorCtrl(controller.channel_a, name='A', min_pc=25)
 
     # initialise state
-    await motor.stop()
-    #await asyncio.sleep(5)
+    motor.stop()
 
     for _ in range(10):
         await run_sequence(motor, motor_speeds, 1.5)
