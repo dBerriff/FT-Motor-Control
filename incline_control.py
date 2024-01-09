@@ -42,11 +42,10 @@ async def main():
 
     async def run_incline(
             demand_btn_,
-            motor_a_, motor_b_, motor_a_speed_, motor_b_speed_, hold_period_,
-            led_):
+            motor_a_, motor_b_, motor_a_speed_, motor_b_speed_, hold_s_,
+            block_period, led_):
         """ run the incline motors under button control """
 
-        block_period = 5  # s; block next button press
         state_ = 'S'
         while True:
             print('Waiting for button press...')
@@ -60,13 +59,14 @@ async def main():
                 motor_b_.set_state('F')
                 print('Accelerate')
                 await asyncio.gather(
-                    motor_a_.accel_u16(motor_a_speed_['f']),
-                    motor_b_.accel_u16(motor_b_speed_['f']))
-                await asyncio.sleep(hold_period_)
+                    motor_a_.accel_pc(motor_a_speed_['F']),
+                    motor_b_.accel_pc(motor_b_speed_['F']))
+                print('Hold')
+                await asyncio.sleep(hold_s_)
                 print('Decelerate')
                 await asyncio.gather(
-                    motor_a_.accel_u16(0),
-                    motor_b_.accel_u16(0))
+                    motor_a_.accel_pc(0),
+                    motor_b_.accel_pc(0))
             else:
                 print('Move Reverse')
                 state_ = 'R'
@@ -74,13 +74,13 @@ async def main():
                 motor_b_.set_state('R')
                 print('Accelerate')
                 await asyncio.gather(
-                    motor_a_.accel_u16(motor_a_speed_['r']),
-                    motor_b_.accel_u16(motor_b_speed_['r']))
-                await asyncio.sleep(hold_period_)
+                    motor_a_.accel_pc(motor_a_speed_['R']),
+                    motor_b_.accel_pc(motor_b_speed_['R']))
+                await asyncio.sleep(hold_s_)
                 print('Decelerate')
                 await asyncio.gather(
-                    motor_a_.accel_u16(0),
-                    motor_b_.accel_u16(0))
+                    motor_a_.accel_pc(0),
+                    motor_b_.accel_pc(0))
 
             # not strictly required but set state 'S'
             motor_a.stop()
@@ -94,14 +94,14 @@ async def main():
         'bridge_pins': (4, 5, 6, 7),
         'run_btn': 20,
         'kill_btn': 22,
-        'pulse_f': 500,
-        'motor_start_pc': 30,
-        'motor_a_speed': {'f': 100, 'r': 95},
-        'motor_b_speed': {'f': 95, 'r': 95},
-        'motor_hold_period': 5
+        'pulse_f': 20_000,
+        'motor_start_pc': 25,
+        'motor_a_speed': {'F': 90, 'R': 50},
+        'motor_b_speed': {'F': 85, 'R': 90},
+        'motor_hold_period': 1
     }
-    
-    params = ConfigFile('incline.json', params).read_cf()
+
+    # params = ConfigFile('incline.json', params).read_cf()
 
     onboard = Led('LED')
 
@@ -119,7 +119,7 @@ async def main():
         run_incline(ctrl_buttons.run_btn,
                     motor_a, motor_b,
                     params['motor_a_speed'], params['motor_b_speed'], params['motor_hold_period'],
-                    onboard))
+                    5, onboard))
     await monitor_kill_btn(ctrl_buttons.kill_btn, controller)
     
     # kill button has been pushed
