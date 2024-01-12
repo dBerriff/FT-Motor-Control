@@ -23,7 +23,6 @@ class L298nChannel:
         'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0),
         's': (1, 1), 'f': (1, 0), 'r': (0, 1), 'h': (0, 0)
     }
-    STATES_SET = {key for key in STATES}
 
     def __init__(self, pwm_pin, motor_pins_, frequency):
         self.en = PWM(Pin(pwm_pin), freq=frequency, duty_u16=0)

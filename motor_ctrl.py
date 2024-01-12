@@ -6,7 +6,6 @@
 """
 
 import asyncio
-import machine
 from l298n import L298N
 
 
@@ -30,12 +29,12 @@ class MotorCtrl:
         self.min_u16 = self.pc_u16(min_pc)  # start-up speed
         self.state = ''
         self.speed_u16 = 0
-        self.states_set = channel.STATES_SET
+        self.states = channel.STATES
         self.run_set = {'F', 'R', 'f', 'r'}
 
     def set_state(self, state):
         """ set 'F' forward, 'R' reverse, or 'S' stop  """
-        if state in self.states_set:
+        if state in self.states:
             self.channel.set_state(state)
             self.state = state
         else:
@@ -102,8 +101,6 @@ async def main():
         'motor_b_speed': {'F': 95, 'R': 95},
         'motor_hold_period': 5
     }
-
-    print(f'machine frequency: {machine.freq() // 1_000_000}MHz')
 
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
     motor_a = MotorCtrl(controller.channel_a, name='A', min_pc=params['motor_min_pc'])
