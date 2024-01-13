@@ -4,6 +4,9 @@
     - developed using MicroPython v1.22.0
     - developed for Famous Trains Derby by David Jones
     - shared with MERG by member 9042
+    
+    N.B. This is demo of PWM LED control.
+    The L298N is not appropriate for actual implementation.
 """
 
 import asyncio
