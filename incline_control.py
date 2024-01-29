@@ -53,11 +53,11 @@ async def main():
             await demand_btn_.press_ev.wait()
             led_.led.off()
             if state_ != 'F':
-                print('Move Forward  ')
+                print('Forward  ')
                 state_ = 'F'
                 motor_a_.set_state('F')
                 motor_b_.set_state('F')
-                print('Accelerate')
+                print(f'A: {motor_a_speed_['F']:02d}% B: {motor_b_speed_['F']:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(motor_a_speed_['F']),
                     motor_b_.accel_pc(motor_b_speed_['F']))
@@ -67,12 +67,15 @@ async def main():
                 await asyncio.gather(
                     motor_a_.accel_pc(0),
                     motor_b_.accel_pc(0))
+                print('Stopped')
+                print(f'A: {0:02d}% B: {0:02d}%')
+
             else:
-                print('Move Reverse')
+                print('Reverse')
                 state_ = 'R'
                 motor_a_.set_state('R')
                 motor_b_.set_state('R')
-                print('Accelerate')
+                print(f'A: {motor_a_speed_['R']:02d}% B: {motor_b_speed_['R']:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(motor_a_speed_['R']),
                     motor_b_.accel_pc(motor_b_speed_['R']))
@@ -81,6 +84,8 @@ async def main():
                 await asyncio.gather(
                     motor_a_.accel_pc(0),
                     motor_b_.accel_pc(0))
+                print('Stopped')
+                print(f'A: {0:02d}% B: {0:02d}%')
 
             # not strictly required but set state 'S'
             motor_a.stop()

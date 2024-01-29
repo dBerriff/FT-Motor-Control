@@ -80,7 +80,6 @@ class MotorCtrl:
         """ set state to 'S'; halt the motor """
         self.set_state('S')
         self.rotate_u16(0)
-        print(f'Motor {self.name} stopped')
 
     def set_logic_off(self):
         """ turn off channel logic """
