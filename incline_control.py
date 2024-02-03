@@ -7,6 +7,7 @@
 """
 
 import asyncio
+import time
 from l298n import L298N
 from motor_ctrl import MotorCtrl
 from buttons import Button
@@ -32,7 +33,7 @@ class InputButtons:
 async def main():
     """ test of motor control """
     
-    def lcd_print(row, text):
+    def lcd_line(row, text):
         lcd.set_cursor(0, row)
         lcd.printout(text)
 
@@ -44,8 +45,7 @@ async def main():
         kill_btn_.press_ev.clear()
         controller_.set_logic_off()
         lcd.clear()
-        lcd.set_cursor(0, 0)
-        lcd.printout('End execution!')
+        lcd_line(0, 'End execution!')
 
     async def run_incline(
             demand_btn_,
@@ -56,55 +56,48 @@ async def main():
         state_ = 'S'
         while True:
             lcd.clear()
-            lcd.set_cursor(0, 0)
-            lcd.printout("Waiting ")
+            lcd_line(0, "Waiting ")
             led_.led.on()
             await demand_btn_.press_ev.wait()
             lcd.clear()
             led_.led.off()
             if state_ != 'F':
-                lcd_print(0, 'F accel ')
+                lcd_line(0, 'F accel ')
                 state_ = 'F'
                 motor_a_.set_state('F')
                 motor_b_.set_state('F')
-                lcd_print(1,
+                lcd_line(1,
                     f'A: {motor_a_speed_['F']:02d}% B: {motor_b_speed_['F']:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(motor_a_speed_['F']),
                     motor_b_.accel_pc(motor_b_speed_['F']))
-                lcd_print(0, 'F hold ')
+                lcd_line(0, 'F hold ')
                 await asyncio.sleep(hold_s_)
-                lcd_print(0, 'F decel ')
-                lcd_print(1, f'A: {0:02d}% B: {0:02d}%')
+                lcd_line(0, 'F decel ')
+                lcd_line(1, f'A: {0:02d}% B: {0:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(0),
                     motor_b_.accel_pc(0))
-                lcd_print(0, 'Stopped ')
+                lcd_line(0, 'Stopped ')
 
             else:
-                lcd.set_cursor(0, 0)
-                lcd.printout('R accel ')
+                lcd_line(0, 'R accel ')
                 state_ = 'R'
                 motor_a_.set_state('R')
                 motor_b_.set_state('R')
-                lcd.set_cursor(0, 1)
-                lcd.printout(
+                lcd_line(1,
                     f'A: {motor_a_speed_['R']:02d}% B: {motor_b_speed_['R']:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(motor_a_speed_['R']),
                     motor_b_.accel_pc(motor_b_speed_['R']))
-                lcd.set_cursor(0, 0)
-                lcd.printout('R hold  ')
+                lcd_line(0, 'R hold  ')
                 await asyncio.sleep(hold_s_)
-                lcd.set_cursor(0, 0)
-                lcd.printout('R decel ')
-                lcd.set_cursor(0, 1)
-                lcd.printout(f'A: {0:02d}% B: {0:02d}%')
+                lcd_line(0, 'R decel ')
+                lcd_line(1, f'A: {0:02d}% B: {0:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(0),
                     motor_b_.accel_pc(0))
-                lcd.set_cursor(0, 0)
-                lcd.printout('Stopped ')
+                lcd_line(0, 'Stopped ')
  
             # not strictly required but set state 'S'
             motor_a.stop()
@@ -141,8 +134,7 @@ async def main():
     ctrl_buttons = InputButtons(params['run_btn'], params['kill_btn'])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
 
-    lcd.set_cursor(0, 0)
-    lcd.printout("FT IC V1.0")
+    lcd_line(0, "FT IC V1.0")
     await asyncio.sleep_ms(2000)
 
     asyncio.create_task(
@@ -152,8 +144,9 @@ async def main():
                     params['motor_hold_period'], 5, onboard))
     await monitor_kill_btn(ctrl_buttons.kill_btn, controller)
     
-    # kill button has been pushed; wait a few ms for motors to stop
-    await asyncio.sleep_ms(20)
+    # kill button has been pressed; wait for motors to stop
+    time.sleep_ms(5000)
+    lcd.clear()
 
 if __name__ == '__main__':
     try:
