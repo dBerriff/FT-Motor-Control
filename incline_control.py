@@ -35,7 +35,7 @@ async def main():
     
     def lcd_line(row, text):
         lcd.set_cursor(0, row)
-        lcd.printout(text)
+        lcd.write_out(text)
 
     async def monitor_kill_btn(kill_btn_, controller_):
         """ monitor for kill-button press
@@ -56,13 +56,13 @@ async def main():
         state_ = 'S'
         while True:
             lcd.clear()
-            lcd_line(0, "Waiting ")
+            lcd_line(0, "Waiting...")
             led_.led.on()
             await demand_btn_.press_ev.wait()
             lcd.clear()
             led_.led.off()
             if state_ != 'F':
-                lcd_line(0, 'F accel ')
+                lcd_line(0, 'Fwd accel ')
                 state_ = 'F'
                 motor_a_.set_state('F')
                 motor_b_.set_state('F')
@@ -71,17 +71,17 @@ async def main():
                 await asyncio.gather(
                     motor_a_.accel_pc(motor_a_speed_['F']),
                     motor_b_.accel_pc(motor_b_speed_['F']))
-                lcd_line(0, 'F hold ')
+                lcd_line(0, 'Fwd hold  ')
                 await asyncio.sleep(hold_s_)
-                lcd_line(0, 'F decel ')
+                lcd_line(0, 'Fwd decel ')
                 lcd_line(1, f'A: {0:02d}% B: {0:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(0),
                     motor_b_.accel_pc(0))
-                lcd_line(0, 'Stopped ')
+                lcd_line(0, 'Fwd stop  ')
 
             else:
-                lcd_line(0, 'R accel ')
+                lcd_line(0, 'Rev accel ')
                 state_ = 'R'
                 motor_a_.set_state('R')
                 motor_b_.set_state('R')
@@ -90,14 +90,14 @@ async def main():
                 await asyncio.gather(
                     motor_a_.accel_pc(motor_a_speed_['R']),
                     motor_b_.accel_pc(motor_b_speed_['R']))
-                lcd_line(0, 'R hold  ')
+                lcd_line(0, 'Rev hold  ')
                 await asyncio.sleep(hold_s_)
-                lcd_line(0, 'R decel ')
+                lcd_line(0, 'Rev decel ')
                 lcd_line(1, f'A: {0:02d}% B: {0:02d}%')
                 await asyncio.gather(
                     motor_a_.accel_pc(0),
                     motor_b_.accel_pc(0))
-                lcd_line(0, 'Stopped ')
+                lcd_line(0, 'Rev stop  ')
  
             # not strictly required but set state 'S'
             motor_a.stop()
@@ -123,19 +123,21 @@ async def main():
 
     onboard = Led('LED')
     lcd = lcd_1602.Lcd1602(*params['i2c_pins'])
+    print(f'LCD 1602 I2C found address: {lcd.address}')
+    lcd_line(0, f'FT IC V1.0')
+    lcd_line(1, f'I2C: {lcd.address}')
+    await asyncio.sleep_ms(5_000)
 
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
     motor_a = MotorCtrl(controller.channel_a, name='A', min_pc=params['motor_start_pc'])
     motor_b = MotorCtrl(controller.channel_b, name='B', min_pc=params['motor_start_pc'])
-    # set initial state to 'S'
+    # set initial state
     motor_a.stop()
     motor_b.stop()
 
     ctrl_buttons = InputButtons(params['run_btn'], params['kill_btn'])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
 
-    lcd_line(0, "FT IC V1.0")
-    await asyncio.sleep_ms(2000)
 
     asyncio.create_task(
         run_incline(ctrl_buttons.run_btn,
