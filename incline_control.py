@@ -113,9 +113,11 @@ async def main():
     }
 
     lcd = lcd_1602.Lcd1602(*params['i2c_pins'])
-    print(f'LCD 1602 I2C address: {lcd.address}')
+    if lcd.lcd_mode:
+        print(f'LCD 1602 I2C address: {lcd.address}')
     lcd.write_line(0, f'FT IC V1.0')
-    lcd.write_line(1, f'I2C addr: {lcd.address}')
+    if lcd.lcd_mode:
+        lcd.write_line(1, f'I2C addr: {lcd.address}')
     await asyncio.sleep_ms(5_000)
 
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])

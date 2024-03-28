@@ -1,6 +1,6 @@
 import machine
-import time
 from micropython import const
+import time
 
 COLUMNS = const(16)
 ROWS = const(2)
