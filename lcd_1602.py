@@ -8,7 +8,6 @@ import time
 
 class Lcd1602:
     """ drive LCD1602 display """
-
     # not all constants are used
     I2C_ADDR = const(62)  # I2C Address
 
