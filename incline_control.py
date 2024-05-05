@@ -20,13 +20,20 @@ class InputButtons:
     def __init__(self, run_pin, kill_pin):
         self.run_btn = Button(run_pin)
         self.kill_btn = Button(kill_pin)
+        self.n_btn = HoldButton(n_pin)
+        self.s_btn = Button(s_pin)
+        self.e_btn = Button(e_pin)
+        self.w_btn = Button(w_pin)
 
     async def poll_buttons(self):
         """ start button polling """
         # buttons self-poll to set Event when clicked
         asyncio.create_task(self.run_btn.poll_state())
         asyncio.create_task(self.kill_btn.poll_state())
-
+        asyncio.create_task(self.n_btn.poll_state())
+        asyncio.create_task(self.s_btn.poll_state())
+        asyncio.create_task(self.e_btn.poll_state())
+        asyncio.create_task(self.w_btn.poll_state())                                                                                                                                                          
 
 async def main():
     """ test of motor control """
@@ -98,11 +105,14 @@ async def main():
             await asyncio.sleep(block_period)
             demand_btn_.press_ev.clear()  # clear any intervening press
 
+    # === user parameters
     # dictionary can be saved as JSON file
+
     params = {
         'i2c_pins': (4, 5),  # sda, scl
         'pwm_pins': (8, 9),
         'bridge_pins': (10, 11, 12, 13),
+        'cal_pins': (16, 17, 18, 19)
         'run_btn': 20,
         'kill_btn': 22,
         'pulse_f': 20_000,
@@ -118,9 +128,11 @@ async def main():
     lcd.write_line(0, f'FT IC V1.0')
     if lcd.lcd_mode:
         lcd.write_line(1, f'I2C addr: {lcd.address}')
-    await asyncio.sleep_ms(5_000)
+    await asyncio.sleep_ms(3_000)
 
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
+    calibrator = 
+    print(controller.pins)
     motor_a = MotorCtrl(controller.channel_a,
                         name='A', min_pc=params['motor_start_pc'])
     motor_b = MotorCtrl(controller.channel_b,

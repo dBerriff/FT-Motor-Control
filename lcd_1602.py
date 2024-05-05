@@ -41,6 +41,7 @@ class Lcd1602:
             # self.address info only; ADDRESS used in code
             self.address = self.i2c.scan()[0]
             self.lcd_mode = True
+            print(f'I2C address: {self.address}')
         except IndexError:
             self.lcd_mode = False
             print('I2C address not found: print mode instead.')
@@ -81,7 +82,7 @@ class Lcd1602:
         self._show_fn |= self.LINES_2 if lines > 1 else self.LINES_1
         time.sleep_ms(50)
 
-        # Send function set command 3 times (apparently required)
+        # Send function set command 3 times (!)
         for _ in range(3):
             self._command(self.FN_SET | self._show_fn)
             time.sleep_ms(5)  # wait more than 4.1ms

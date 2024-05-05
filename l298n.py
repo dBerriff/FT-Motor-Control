@@ -18,7 +18,7 @@ class L298nChannel:
     """
 
     # for (IN1, IN2) or (IN3, IN4)
-    # swap 'F' and 'R' values to reverse polarity
+    # swap 'F' (forward( and 'R' (reverse) values to reverse polarity
     STATES = {
         'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0),
         's': (1, 1), 'f': (1, 0), 'r': (0, 1), 'h': (0, 0)
@@ -66,12 +66,11 @@ class L298N:
         # channel A: PWM input to ENA; bridge-switching inputs to IN1 and IN2
         self.channel_a = L298nChannel(
             pwm_pins_[0], (sw_pins_[0], sw_pins_[1]), f)
-
-        # channel B: PWM input to ENB; bridge-switching inputs to IN3 and IN4
+        # channel B: PWM input to ENB
         self.channel_b = L298nChannel(
             pwm_pins_[1], (sw_pins_[2], sw_pins_[3]), f)
 
-        print(f'L298N initialised: {pwm_pins_}; {sw_pins_}; {self.channel_a.en.freq()}')
+        self.pins = f'L298N PWM: {pwm_pins_} switch: {sw_pins_} f: {self.channel_a.en.freq()}'
 
     def set_logic_off(self):
         """ set all control inputs off (0) """
