@@ -31,20 +31,24 @@ class Lcd1602:
     LINES_1 = const(0x00)
     DOTS_5x8 = const(0x00)
 
-    def __init__(self, sda_, scl_, col=16, row=2):
-        i = 0 if sda_ in (0, 4, 8, 12, 16, 20) else 1
-        self.i2c = I2C(i, sda=Pin(sda_), scl=Pin(scl_), freq=400_000)
-        self._col = col
-        self._row = row
+    def __init__(self, sda, scl, col, row):
+        i = 0 if sda in (0, 4, 8, 12, 16, 20) else 1
+        self.i2c = I2C(i, sda=Pin(sda), scl=Pin(scl), freq=400_000)
+        self._cols = col
+        self._rows = row
         self._show_fn = self.MODE_4BIT | self.LINES_1 | self.DOTS_5x8
         try:
-            # self.address info only; ADDRESS used in code
-            self.address = self.i2c.scan()[0]
-            self.lcd_mode = True
-            print(f'I2C address: {self.address}')
+            # address info only; ADDRESS used in code
+            address = self.i2c.scan()[0]
+            if address != self.I2C_ADDR:
+                self.lcd_mode = False
+                print(f'I2C address found: {address}')
+            else:
+                self.lcd_mode = True
+                print(f'I2C address found: {address}')
         except IndexError:
             self.lcd_mode = False
-            print('I2C address not found: print mode instead.')
+            print('I2C address not found: print() mode')
         if self.lcd_mode:
             self._start(row)
         self._n_lines = None
@@ -101,10 +105,20 @@ class Lcd1602:
             self._command(self.CLR_DISP)
             time.sleep_ms(2)
 
-    def write_line(self, row, text):
-        """ write text to display row """
+    def write_line(self, row, text, chars=16):
+        """ write text to left-justified display row """
         if self.lcd_mode:
+            for i in range(len(text), chars):
+                text += ' '
             self._set_cursor(0, row)
             self._write_out(text)
         else:
             print(f'{row}: {text}')
+
+    def write_char(self, col, row, char):
+        """ write character to (col, row) """
+        if self.lcd_mode:
+            self._set_cursor(col, row)
+            self._write_out(char)
+        else:
+            print(f'({col}, {row}): {char}')

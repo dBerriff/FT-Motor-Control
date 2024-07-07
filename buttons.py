@@ -1,4 +1,9 @@
 # buttons.py
+""" implement press and hold buttons
+    class Button implements a click button
+    class HoldButton extends Button to include a hold event
+    - button methods are coroutines and include self-polling methods
+"""
 
 import asyncio
 from machine import Pin, Signal
@@ -7,104 +12,79 @@ from time import ticks_ms, ticks_diff
 
 
 class Button:
-    """
-        button with click state - no debounce
-        self._hw_in = Signal(
-            pin, Pin.IN, Pin.PULL_UP, invert=True)
-    """
-    WAIT = const(0)
-    CLICK = const(1)
-    HOLD = const(2)
+    """ button with click state"""
+    # button states
+    WAIT = const('0')
+    CLICK = const('1')
+
     POLL_INTERVAL = const(20)  # ms
 
     def __init__(self, pin, name=''):
         # Signal wraps pull-up logic with invert
-        self._hw_in = Signal(pin, Pin.IN, Pin.PULL_UP, invert=True)
+        self._hw_in = Signal(
+            pin, Pin.IN, Pin.PULL_UP, invert=True)
         if name:
             self.name = name
         else:
-            self.name = str(pin)
-        self.state = self.WAIT
-        self.prev_state = self.WAIT
-        self.active_states = (self.CLICK,)
-        self.press_ev = asyncio.Event()
-        self.press_ev.clear()
-
-    def get_state(self):
-        """ check for button click state """
-        pin_state = self._hw_in.value()
-        if pin_state != self.prev_state:
-            self.prev_state = pin_state
-            if not pin_state:
-                return self.CLICK
-        return self.WAIT
+            self.name = str(pin)        
+        self.states = {'wait': self.name + self.WAIT,
+                       'click': self.name + self.CLICK
+                       }
+        self.press_ev = asyncio.Event()  # starts cleared
+        self.state = self.states['wait']
 
     async def poll_state(self):
-        """ poll self for press event
-            - button state must be cleared by event handler
+        """ poll self for click event
+            - event is set on button release
+            - event handler must call clear_state
         """
+        prev_pin_state = self._hw_in.value()
         while True:
-            self.state = self.get_state()
-            if self.state in self.active_states:
-                self.press_ev.set()
+            pin_state = self._hw_in.value()
+            if pin_state != prev_pin_state:
+                if not pin_state:
+                    self.state = self.states['click']
+                    self.press_ev.set()
+                prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
 
     def clear_state(self):
         """ set state to 0 """
-        self.state = self.WAIT
+        self.state = self.states['wait']
         self.press_ev.clear()
 
 
 class HoldButton(Button):
-    """ add hold state """
-
+    """ button add hold state """
+    # additional button state
+    HOLD = const('2')
     T_HOLD = const(750)  # ms - adjust as required
 
     def __init__(self, pin, name=''):
         super().__init__(pin, name)
-        self.active_states = (self.CLICK, self.HOLD)
-        self.on_time = 0
+        self.states['hold'] = self.name + self.HOLD
 
-    def get_state(self):
-        """ check for button click or hold state """
-        pin_state = self._hw_in.value()
-        if pin_state != self.prev_state:
-            self.prev_state = pin_state
-            time_stamp = ticks_ms()
-            if pin_state:
-                # pressed, start timer
-                self.on_time = time_stamp
-            else:
-                # released, determine action
-                if ticks_diff(time_stamp, self.on_time) < self.T_HOLD:
-                    return self.CLICK
+    async def poll_state(self):
+        """ poll self for click or hold events
+            - button state must be cleared by event handler
+            - elapsed time measured in ms
+        """
+        on_time = None
+        prev_pin_state = self._hw_in.value()
+        while True:
+            pin_state = self._hw_in.value()
+            if pin_state != prev_pin_state:
+                time_stamp = ticks_ms()
+                if pin_state:
+                    on_time = time_stamp
                 else:
-                    return self.HOLD
-        return self.WAIT
-
-
-class ButtonGroup:
-    """ 
-        buttons working as a group
-        - buttons must be named by string
-        - hold button name must start with 'H'
-    """
-
-    def __init__(self, pins, names):
-        self.buttons = {}
-        for pin in pins:
-            name = names[pin]
-            if name.startswith("H"):
-                self.buttons[name] = HoldButton(pin, name)
-            else:
-                self.buttons[name] = Button(pin, name)
-        self.button_pressed = ""
-        self.button_state = 0
-        self.button_group_ev = asyncio.Event()
-
-    async def poll_group(self):
-        """ poll buttons for press"""
-        pass
+                    if ticks_diff(time_stamp, on_time) < self.T_HOLD:
+                        self.state = self.states['click']
+                    else:
+                        self.state = self.states['hold']
+                    self.press_ev.set()
+                prev_pin_state = pin_state
+            await asyncio.sleep_ms(self.POLL_INTERVAL)
 
 
 async def main():
@@ -112,15 +92,15 @@ async def main():
 
     # Plasma 2040 buttons
     buttons = {
-        'A': Button(20, 'A'),
+        'A': HoldButton(20, 'A'),
         'B': HoldButton(21, 'B'),
         'U': HoldButton(22, 'C')
     }
 
-    async def keep_alive(period=600):
-        """ coro: keep scheduler running """
+    async def keep_alive():
+        """ coro: to be awaited """
         t = 0
-        while t < period:
+        while t < 60:
             await asyncio.sleep(1)
             t += 1
 
@@ -138,7 +118,7 @@ async def main():
         asyncio.create_task(process_event(buttons[b]))  # respond to event
     print('System initialised')
 
-    await keep_alive(60)  # run scheduler until keep_alive() times out
+    await keep_alive()  # run scheduler until keep_alive() times out
 
 
 if __name__ == '__main__':

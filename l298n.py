@@ -53,24 +53,26 @@ class L298nChannel:
 
 class L298N:
     """ control a generic L298N H-bridge board
-        - 2 channels labelled A and B
-        - EN inputs (PWM) are labelled: ENA and ENB
-        - bridge-switch setting inputs are labelled (IN1, IN2) and (IN3, IN4)
-        - connections: Pico GPIO => L298N
+        - 2 channels A and B
+        - EN (PWM) labelled: ENA and ENB
+        - H-bridge inputs labelled (IN1, IN2), (IN3, IN4)
+        - connections: Pico => L298N
         -- pwm_pins => (ENA, ENB)
         -- sw_pins  => (IN1, IN2, IN3, IN4)
     """
 
     def __init__(self, pwm_pins_, sw_pins_, f):
-
-        # channel A: PWM input to ENA; bridge-switching inputs to IN1 and IN2
+        # for debug
+        self.pwm_pins = pwm_pins_
+        self.sw_pins = sw_pins_
+        self.f = f
+        # channel A
         self.channel_a = L298nChannel(
             pwm_pins_[0], (sw_pins_[0], sw_pins_[1]), f)
-        # channel B: PWM input to ENB
+        # channel B
         self.channel_b = L298nChannel(
             pwm_pins_[1], (sw_pins_[2], sw_pins_[3]), f)
 
-        self.pins = f'L298N PWM: {pwm_pins_} switch: {sw_pins_} f: {self.channel_a.en.freq()}'
 
     def set_logic_off(self):
         """ set all control inputs off (0) """

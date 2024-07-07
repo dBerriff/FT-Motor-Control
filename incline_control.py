@@ -10,20 +10,20 @@ import asyncio
 import time
 from l298n import L298N
 from motor_ctrl import MotorCtrl
-from buttons import Button
-import lcd_1602
+from buttons import Button, HoldButton
+from lcd_1602 import Lcd1602
 
 
 class InputButtons:
     """ input buttons """
 
-    def __init__(self, run_pin, kill_pin):
-        self.run_btn = Button(run_pin)
-        self.kill_btn = Button(kill_pin)
-        self.n_btn = HoldButton(n_pin)
-        self.s_btn = Button(s_pin)
-        self.e_btn = Button(e_pin)
-        self.w_btn = Button(w_pin)
+    def __init__(self, buttons):
+        self.run_btn = Button(buttons["run"])
+        self.kill_btn = Button(buttons["kill"])
+        self.n_btn = HoldButton(buttons["N"])
+        self.s_btn = Button(buttons["S"])
+        self.e_btn = Button(buttons["E"])
+        self.w_btn = Button(buttons["W"])
 
     async def poll_buttons(self):
         """ start button polling """
@@ -34,6 +34,32 @@ class InputButtons:
         asyncio.create_task(self.s_btn.poll_state())
         asyncio.create_task(self.e_btn.poll_state())
         asyncio.create_task(self.w_btn.poll_state())                                                                                                                                                          
+
+
+class CtrlState:
+    """ set states: Off, Run, Cal """
+
+    def __init__(self):
+        pass
+
+    async def set_off(self):
+        """ set state off """
+        pass
+
+    async def set_run(self):
+        """ set state run """
+        pass
+
+    async def set_cal(self):
+        """ set state cal (calibrate) """
+        pass
+
+    @staticmethod
+    async def no_t():
+        """ coro: no transition """
+        await asyncio.sleep_ms(1)
+        # no change in state
+
 
 async def main():
     """ test of motor control """
@@ -109,46 +135,45 @@ async def main():
     # dictionary can be saved as JSON file
 
     params = {
-        'i2c_pins': (4, 5),  # sda, scl
-        'pwm_pins': (8, 9),
-        'bridge_pins': (10, 11, 12, 13),
-        'cal_pins': (16, 17, 18, 19)
-        'run_btn': 20,
-        'kill_btn': 22,
+        'i2c_pins': (16, 17),  # LCD sda, scl
+        'cols_rows': (16, 2),
+        'pwm_pins': (6, 7),
+        'bridge_pins': (8, 9, 10, 11),
+        'buttons': {'run': 20, 'kill': 21, 'N': 12, 'S': 13, 'E': 14, 'W': 15},
         'pulse_f': 20_000,
-        'motor_start_pc': 25,
-        'motor_a_speed': {'F': 90, 'R': 50},
-        'motor_b_speed': {'F': 85, 'R': 90},
-        'motor_hold_period': 5
+        'start_pc': 25,
+        'A_speed': {'F': 90, 'R': 50},
+        'B_speed': {'F': 50, 'R': 90},
+        'hold_s': 5
     }
 
-    lcd = lcd_1602.Lcd1602(*params['i2c_pins'])
+    columns = 16
+    rows = 2
+    lcd = Lcd1602(*params['i2c_pins'], *params['cols_rows'])
     if lcd.lcd_mode:
-        print(f'LCD 1602 I2C address: {lcd.address}')
-    lcd.write_line(0, f'FT IC V1.0')
-    if lcd.lcd_mode:
-        lcd.write_line(1, f'I2C addr: {lcd.address}')
+        print(f'LCD 1602 I2C address: {lcd.I2C_ADDR}')
+        lcd.write_line(0, f'FT IC V1.1')
+        lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
+    else:
+        return
     await asyncio.sleep_ms(3_000)
 
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
-    calibrator = 
-    print(controller.pins)
     motor_a = MotorCtrl(controller.channel_a,
-                        name='A', min_pc=params['motor_start_pc'])
+                        name='A', min_pc=params['start_pc'])
     motor_b = MotorCtrl(controller.channel_b,
-                        name='B', min_pc=params['motor_start_pc'])
+                        name='B', min_pc=params['start_pc'])
     # set initial state
     motor_a.stop()
     motor_b.stop()
 
-    ctrl_buttons = InputButtons(params['run_btn'], params['kill_btn'])
+    ctrl_buttons = InputButtons(params['buttons'])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
 
-    asyncio.create_task(
-        run_incline(ctrl_buttons.run_btn,
-                    motor_a, motor_b,
-                    params['motor_a_speed'], params['motor_b_speed'],
-                    params['motor_hold_period'], 5))
+    asyncio.create_task(run_incline(ctrl_buttons.run_btn,
+                                    motor_a, motor_b,
+                                    params['A_speed'], params['B_speed'],
+                                    params['hold_s'], 5))
     await monitor_kill_btn(ctrl_buttons.kill_btn, controller)
 
     # kill button has been pressed; wait for motors to stop

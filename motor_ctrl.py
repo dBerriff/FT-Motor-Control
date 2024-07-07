@@ -10,9 +10,8 @@ from l298n import L298N
 
 
 class MotorCtrl:
-    """ control state/direction and speed of a motor
-        - negative speeds are not supported
-        - call set_state() to change direction to 'F' or 'R'
+    """ control state/direction/speed of a motor
+        - negative speeds not supported
     """
 
     @staticmethod
@@ -33,7 +32,7 @@ class MotorCtrl:
         self.run_set = {'F', 'R', 'f', 'r'}
 
     def set_state(self, state):
-        """ set 'F' forward, 'R' reverse, or 'S' stop  """
+        """ 'F' forward, 'R' reverse, or 'S' stop  """
         if state in self.states:
             self.channel.set_state(state)
             self.state = state
@@ -41,12 +40,12 @@ class MotorCtrl:
             print(f'Unknown state: {state}')
 
     def rotate_u16(self, dc_u16):
-        """ rotate motor in state direction at u16 duty cycle """
+        """ rotate motor at u16 duty cycle """
         self.channel.set_dc_u16(dc_u16)
         self.speed_u16 = dc_u16
 
     def rotate_pc(self, dc_pc):
-        """ rotate motor in state direction at u16 duty cycle """
+        """ rotate motor at pc% duty cycle """
         self.rotate_u16(self.pc_u16(dc_pc))
 
     async def accel_pc(self, target_pc, period_ms=1_000):
