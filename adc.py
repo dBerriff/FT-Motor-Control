@@ -2,11 +2,12 @@ from micropython import const
 from machine import Pin, I2C, ADC
 from lcd_1602 import Lcd1602
 from buttons import HoldButton
+import json
 
 import asyncio
 
 
-class AdcIn:
+class Adc:
     """ input from potentiometer to ADC """
     pc_factor = const(655)
 
@@ -32,7 +33,18 @@ class System:
 
 
 async def main():
-    
+
+    def get_params(file_name):
+        """ return char pixel indices """
+        with open(file_name, 'r') as f:
+            retrieved = json.load(f)
+        return retrieved
+
+    def save_params(parameters, file_name):
+        """ return char pixel indices """
+        with open(file_name, 'w') as f:
+            json.dump(parameters, f)
+
     async def process_btn_event(btn, system_):
         """ coro: process system button events """
         while True:
@@ -44,6 +56,8 @@ async def main():
         """ coro: process system adc events """
         pass
 
+    filename = 'parameters.json'
+    params = get_params(filename)
 
     buttons = {
         'A': HoldButton(20, 'A'),
@@ -62,12 +76,13 @@ async def main():
     rows = 2
     lcd = Lcd1602(sda=0, scl=1, col=columns, row=rows)
 
-    adc_input_a = AdcIn(26)
-    adc_input_b = AdcIn(27)
-    fwd_prev = -1
-    rev_prev = -1
+    adc_input_a = Adc(26)
+    adc_input_b = Adc(27)
+
+    fwd_prev = params['a_fwd']
+    rev_prev = params['b_fwd']
     track = 'A'    
-    print('System initialised')
+    print(f'System initialised \n{params}')
 
     lcd.write_line(0, f'{track}')
     while True:

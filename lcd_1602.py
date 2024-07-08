@@ -105,10 +105,11 @@ class Lcd1602:
             self._command(self.CLR_DISP)
             time.sleep_ms(2)
 
-    def write_line(self, row, text, chars=16):
+    def write_line(self, row, text):
         """ write text to left-justified display row """
+        text = text[:self._cols]
         if self.lcd_mode:
-            for i in range(len(text), chars):
+            for i in range(len(text), self._cols):
                 text += ' '
             self._set_cursor(0, row)
             self._write_out(text)
