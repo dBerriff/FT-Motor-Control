@@ -20,20 +20,20 @@ class InputButtons:
     def __init__(self, buttons):
         self.run_btn = Button(buttons["run"])
         self.kill_btn = Button(buttons["kill"])
-        self.n_btn = HoldButton(buttons["N"])
-        self.s_btn = Button(buttons["S"])
-        self.e_btn = Button(buttons["E"])
-        self.w_btn = Button(buttons["W"])
+        # self.n_btn = HoldButton(buttons["N"])
+        # self.s_btn = Button(buttons["S"])
+        # self.e_btn = Button(buttons["E"])
+        # self.w_btn = Button(buttons["W"])
 
     async def poll_buttons(self):
         """ start button polling """
         # buttons self-poll to set Event when clicked
         asyncio.create_task(self.run_btn.poll_state())
         asyncio.create_task(self.kill_btn.poll_state())
-        asyncio.create_task(self.n_btn.poll_state())
-        asyncio.create_task(self.s_btn.poll_state())
-        asyncio.create_task(self.e_btn.poll_state())
-        asyncio.create_task(self.w_btn.poll_state())                                                                                                                                                          
+        # asyncio.create_task(self.n_btn.poll_state())
+        # asyncio.create_task(self.s_btn.poll_state())
+        # asyncio.create_task(self.e_btn.poll_state())
+        # asyncio.create_task(self.w_btn.poll_state())                                                                                                                                                          
 
 
 class CtrlState:
@@ -135,11 +135,11 @@ async def main():
     # dictionary can be saved as JSON file
 
     params = {
-        'i2c_pins': (16, 17),  # LCD sda, scl
-        'cols_rows': (16, 2),
-        'pwm_pins': (6, 7),
-        'bridge_pins': (8, 9, 10, 11),
-        'buttons': {'run': 20, 'kill': 21, 'N': 12, 'S': 13, 'E': 14, 'W': 15},
+        'i2c_pins': {'sda': 0, 'scl': 1},
+        'cols_rows': {'cols': 16, 'rows': 2},
+        'pwm_pins': (17, 22),
+        'bridge_pins': (18, 19, 20, 21),
+        'buttons': {'run': 6, 'kill': 7},
         'pulse_f': 20_000,
         'start_pc': 25,
         'A_speed': {'F': 90, 'R': 50},
@@ -147,16 +147,14 @@ async def main():
         'hold_s': 5
     }
 
-    columns = 16
-    rows = 2
-    lcd = Lcd1602(*params['i2c_pins'], *params['cols_rows'])
+    lcd = Lcd1602(params['i2c_pins'])
     if lcd.lcd_mode:
         print(f'LCD 1602 I2C address: {lcd.I2C_ADDR}')
         lcd.write_line(0, f'FT IC V1.1')
         lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
     else:
-        return
-    await asyncio.sleep_ms(3_000)
+        print('LCD Dispaly not found')
+    await asyncio.sleep_ms(1_000)
 
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
     motor_a = MotorCtrl(controller.channel_a,

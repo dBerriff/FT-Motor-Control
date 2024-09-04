@@ -1,5 +1,6 @@
 # buttons.py
-""" implement press and hold buttons
+"""
+    implement press and hold buttons
     class Button implements a click button
     class HoldButton extends Button to include a hold event
     - button methods are coroutines and include self-polling methods
@@ -86,15 +87,22 @@ class HoldButton(Button):
                 prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
 
+    def __str__(self):
+        return f'{self.name} {self.state}'
+
+    def __repr__(self):
+        return f'{self.name} {self.state}'
+
 
 async def main():
     """ coro: test Button and HoldButton classes """
 
     # Plasma 2040 buttons
     buttons = {
-        'A': HoldButton(20, 'A'),
-        'B': HoldButton(21, 'B'),
-        'U': HoldButton(22, 'C')
+        '1': HoldButton(6, 'A'),
+        '2': HoldButton(7, 'B'),
+        '3': HoldButton(8, 'C'),
+        '4': HoldButton(9, 'D')
     }
 
     async def keep_alive():

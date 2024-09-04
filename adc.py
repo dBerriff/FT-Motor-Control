@@ -1,10 +1,9 @@
+import asyncio
 from micropython import const
 from machine import Pin, I2C, ADC
-from lcd_1602 import Lcd1602
-from buttons import HoldButton
+from lcd_1602 import LcdApi
+from buttons import Button, HoldButton
 import json
-
-import asyncio
 
 
 class Adc:
@@ -22,14 +21,32 @@ class Adc:
 class System:
     """ holding class for System """
     
-    def __init__(self):
+    def __init__(self, buttons_):
         self.trigger = None
+        self.buttons = buttons_
+        # create tasks to test each button
+        for b in buttons_:
+            asyncio.create_task(buttons_[b].poll_event())  # buttons_ self-poll
+            asyncio.create_task(self.process_event(buttons_[b]))  # respond to event
+
+    async def process_event(self, btn):
+        """ coro: process system button events """
+        while True:
+            await btn.press_ev.wait()
+            self.buttons[btn.name].state = btn.state
+            btn.clear_state()
+            print(self.buttons)
 
     async def st_logic(self, btn_state):
         """ respond to btn_ state """
         self.trigger = btn_state
         print(self.trigger)
-        await asyncio.sleep_ms(20)
+        await asyncio.sleep_ms(200)
+
+
+    async def process_adc_event(btn, system_):
+        """ coro: process system adc events """
+        pass
 
 
 async def main():
@@ -45,16 +62,6 @@ async def main():
         with open(file_name, 'w') as f:
             json.dump(parameters, f)
 
-    async def process_btn_event(btn, system_):
-        """ coro: process system button events """
-        while True:
-            await btn.press_ev.wait()
-            await system_.st_logic(btn.state)
-            btn.clear_state()
-
-    async def process_adc_event(btn, system_):
-        """ coro: process system adc events """
-        pass
 
     filename = 'parameters.json'
     params = get_params(filename)
@@ -65,16 +72,12 @@ async def main():
         'C': HoldButton(22, 'C')
         }
 
-    system = System()
+    system = System(buttons)
 
-    # create tasks to test each button
-    for b in buttons:
-        asyncio.create_task(buttons[b].poll_state())  # buttons self-poll
-        asyncio.create_task(process_btn_event(buttons[b], system))  # respond to event
 
     columns = 16
     rows = 2
-    lcd = Lcd1602(sda=0, scl=1, col=columns, row=rows)
+    lcd = LcdApi(sda=0, scl=1)
 
     adc_input_a = Adc(26)
     adc_input_b = Adc(27)

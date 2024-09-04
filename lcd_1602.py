@@ -31,11 +31,12 @@ class Lcd1602:
     LINES_1 = const(0x00)
     DOTS_5x8 = const(0x00)
 
-    def __init__(self, sda, scl, col, row):
-        i = 0 if sda in (0, 4, 8, 12, 16, 20) else 1
-        self.i2c = I2C(i, sda=Pin(sda), scl=Pin(scl), freq=400_000)
-        self._cols = col
-        self._rows = row
+    def __init__(self, pins, dim={'cols': 16, 'rows': 2}):
+        print(pins, dim)
+        i = 0 if pins['sda'] in (0, 4, 8, 12, 16, 20) else 1
+        self.i2c = I2C(i, sda=Pin(pins['sda']), scl=Pin(pins['scl']), freq=400_000)
+        self._cols = dim['cols']
+        self._rows = dim['rows']
         self._show_fn = self.MODE_4BIT | self.LINES_1 | self.DOTS_5x8
         try:
             # address info only; ADDRESS used in code
@@ -50,7 +51,7 @@ class Lcd1602:
             self.lcd_mode = False
             print('I2C address not found: print() mode')
         if self.lcd_mode:
-            self._start(row)
+            self._start(self._rows)
         self._n_lines = None
         self._curr_line = None
         self._show_ctrl = None
@@ -107,14 +108,11 @@ class Lcd1602:
 
     def write_line(self, row, text):
         """ write text to left-justified display row """
-        text = text[:self._cols]
         if self.lcd_mode:
-            for i in range(len(text), self._cols):
-                text += ' '
             self._set_cursor(0, row)
-            self._write_out(text)
+            self._write_out(f'{text:<16}')
         else:
-            print(f'{row}: {text}')
+            print(f'{text:<16}')
 
     def write_char(self, col, row, char):
         """ write character to (col, row) """

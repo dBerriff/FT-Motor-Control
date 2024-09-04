@@ -18,11 +18,9 @@ class L298nChannel:
     """
 
     # for (IN1, IN2) or (IN3, IN4)
-    # swap 'F' (forward( and 'R' (reverse) values to reverse polarity
-    STATES = {
-        'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0),
-        's': (1, 1), 'f': (1, 0), 'r': (0, 1), 'h': (0, 0)
-    }
+    # swap 'F' and 'R' values to reverse polarity
+    STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0)}
+    STATES_SET = set(STATES.keys())
 
     def __init__(self, pwm_pin, motor_pins_, frequency):
         self.en = PWM(Pin(pwm_pin), freq=frequency, duty_u16=0)
@@ -39,7 +37,7 @@ class L298nChannel:
 
     def set_state(self, state):
         """ set H-bridge switch states """
-        if state in self.STATES:
+        if state in self.STATES_SET:
             in_0, in_1 = self.STATES[state]
             self.sw_0.value(in_0)
             self.sw_1.value(in_1)
@@ -53,26 +51,25 @@ class L298nChannel:
 
 class L298N:
     """ control a generic L298N H-bridge board
-        - 2 channels A and B
-        - EN (PWM) labelled: ENA and ENB
-        - H-bridge inputs labelled (IN1, IN2), (IN3, IN4)
-        - connections: Pico => L298N
+        - 2 channels labelled A and B
+        - EN inputs (PWM) are labelled: ENA and ENB
+        - bridge-switch setting inputs are labelled (IN1, IN2) and (IN3, IN4)
+        - connections: Pico GPIO => L298N
         -- pwm_pins => (ENA, ENB)
         -- sw_pins  => (IN1, IN2, IN3, IN4)
     """
 
     def __init__(self, pwm_pins_, sw_pins_, f):
-        # for debug
-        self.pwm_pins = pwm_pins_
-        self.sw_pins = sw_pins_
-        self.f = f
-        # channel A
+
+        # channel A: PWM input to ENA; bridge-switching inputs to IN1 and IN2
         self.channel_a = L298nChannel(
             pwm_pins_[0], (sw_pins_[0], sw_pins_[1]), f)
-        # channel B
+
+        # channel B: PWM input to ENB; bridge-switching inputs to IN3 and IN4
         self.channel_b = L298nChannel(
             pwm_pins_[1], (sw_pins_[2], sw_pins_[3]), f)
 
+        print(f'L298N initialised: {pwm_pins_}; {sw_pins_}; {self.channel_a.en.freq()}')
 
     def set_logic_off(self):
         """ set all control inputs off (0) """

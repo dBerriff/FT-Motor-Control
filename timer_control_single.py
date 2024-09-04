@@ -1,5 +1,6 @@
 # timer_control_single.py
-""" run a dc motor under PWM control
+"""
+    run a dc motor under PWM control
     - files 2298n.py and motor_ctrl.py must be uploaded to the Pico
     - developed for Famous Trains Derby by David Jones
     - shared with MERG by member 9042
@@ -19,7 +20,7 @@ async def main():
     async def run_sequence(motor_, motor_speed_, steady_period=2):
         """ run the locomotive """
         motor_.set_state('F')
-        print('Accelerate')
+        print('Accelerate forward')
         await motor_.accel_pc(motor_speed_.f, 1000)
         print('Hold speed')
         await asyncio.sleep(steady_period)
@@ -28,7 +29,7 @@ async def main():
         print('Pause')
         await asyncio.sleep(5)
         motor_.set_state('R')
-        print('Accelerate')
+        print('Accelerate reverse')
         await motor_.accel_pc(motor_speed_.r, 1000)
         print('Hold speed')
         await asyncio.sleep(steady_period)
@@ -37,9 +38,9 @@ async def main():
 
     # === parameters
 
-    pwm_pins = (2, 3)
-    motor_pins = (4, 5, 6, 7)
-    pulse_freq = 400  # adjust for physical motor and controller
+    pwm_pins = (17, 22)
+    motor_pins = (18, 19, 20, 21)
+    pulse_freq = 20_000  # adjust for physical motor and controller
     
     motor_speeds = Speed(f=90, r=90)
 
@@ -51,7 +52,7 @@ async def main():
     # initialise state
     motor.stop()
 
-    for _ in range(10):
+    for _ in range(1):
         await run_sequence(motor, motor_speeds, 5)
         print('Pause')
         await asyncio.sleep(5)

@@ -103,14 +103,17 @@ async def main():
     controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
     motor_a = MotorCtrl(controller.channel_a, name='A', min_pc=params['motor_min_pc'])
 
+    print('Forward')
     motor_a.set_state('F')
     motor_a.rotate_u16(motor_a.min_u16)
     await asyncio.sleep(5)
     motor_a.stop()
     await asyncio.sleep(1)
+    print('Reverse')
     motor_a.set_state('R')
     motor_a.rotate_u16(motor_a.min_u16)
     await asyncio.sleep(5)
+    print('Stop')
     motor_a.stop()
 
 
