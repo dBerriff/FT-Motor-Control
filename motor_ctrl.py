@@ -10,11 +10,72 @@ from l298n import L298N
 
 
 class MotorCtrl:
-    """ control state/direction/speed of a motor
-        - negative speeds not supported
-    """
+    """ control direction and speed of a 2-channel motor controller """
 
-    @staticmethod
+    def __init__(self, controller, a_speeds, b_speeds, start_u16=16_383):
+        self.controller = controller
+        self.a_speeds = a_speeds
+        self.b_speeds = b_speeds
+        self.start_u16 = start_u16  # start-up speed
+        self.states = controller.STATES
+        self.states_set = controller.STATES_SET
+        self.run_set = {'F', 'R'}
+        self.speed_u16 = 0
+        self.stop_a_b()
+        self.state = 'S'
+
+    def set_state_a_b(self, state):
+        """ set channel state pins  """
+        if state in self.states_set:
+            self.controller.channel_a.set_state(state)
+            self.controller.channel_b.set_state(state)
+            self.state = state
+        else:
+            print(f'Unknown state: {state}')
+
+    def stop_a_b(self):
+        """ stop both motors """
+        self.controller.channel_a.stop()
+        self.controller.channel_b.stop()
+        self.state = 'S'
+
+    def set_logic_off(self):
+        """ turn off channel logic """
+        self.controller.channel_a.set_logic_off()
+        self.controller.channel_b.set_logic_off()
+        self.state = 'H'
+
+    async def accel(self, channel, target_u16, period_ms):
+        """ accelerate channel from current to target duty cycle """
+        current_dc = channel.dc_u16
+        delta = target_u16 - current_dc
+        if delta == 0:
+            return
+        # start from rest?
+        if current_dc == 0:
+            current_dc = self.start_u16
+            delta -= current_dc
+        n_steps = 25
+        step = delta // n_steps
+        pause_ms = period_ms // n_steps
+        print(target_u16, current_dc, step)
+        for speed in range(current_dc, target_u16, step):
+            channel.set_dc_u16(speed)
+            await asyncio.sleep_ms(pause_ms)
+        channel.set_dc_u16(target_u16)
+
+    async def accel_a_b(self, direction, period_ms=1_000):
+        """ accelerate both motors """
+        self.controller.channel_a.set_state(direction)
+        self.controller.channel_b.set_state(direction)
+        await asyncio.gather(self.accel(self.controller.channel_a, self.a_speeds[direction], period_ms),
+                             self.accel(self.controller.channel_b, self.b_speeds[direction], period_ms)
+                             )
+
+
+async def main():
+    """ test motor methods """
+    
     def pc_u16(percentage):
         """ convert positive percentage to 16-bit equivalent """
         if 0 < percentage <= 100:
@@ -22,99 +83,45 @@ class MotorCtrl:
         else:
             return 0
 
-    def __init__(self, channel, name, min_pc):
-        self.channel = channel
-        self.name = name  # for print or logging
-        self.min_u16 = self.pc_u16(min_pc)  # start-up speed
-        self.state = ''
-        self.speed_u16 = 0
-        self.states = channel.STATES
-        self.run_set = {'F', 'R', 'f', 'r'}
-
-    def set_state(self, state):
-        """ 'F' forward, 'R' reverse, or 'S' stop  """
-        if state in self.states:
-            self.channel.set_state(state)
-            self.state = state
-        else:
-            print(f'Unknown state: {state}')
-
-    def rotate_u16(self, dc_u16):
-        """ rotate motor at u16 duty cycle """
-        self.channel.set_dc_u16(dc_u16)
-        self.speed_u16 = dc_u16
-
-    def rotate_pc(self, dc_pc):
-        """ rotate motor at pc% duty cycle """
-        self.rotate_u16(self.pc_u16(dc_pc))
-
-    async def accel_pc(self, target_pc, period_ms=1_000):
-        """ accelerate from current to target speed in trans_period_ms
-            - supports (target < current) for deceleration
-        """
-        if self.state in self.run_set:
-            target_u16 = self.pc_u16(target_pc)
-            if target_u16 < self.min_u16:
-                target_u16 = 0
-            n_steps = 25
-            # check for start from rest
-            if self.speed_u16 == 0 and target_u16 > 0:
-                self.speed_u16 = self.min_u16
-            step = (target_u16 - self.speed_u16) // n_steps
-            # check for stepped acceleration
-            if step != 0:
-                pause_ms = period_ms // n_steps
-                for speed in range(self.speed_u16, target_u16, step):
-                    self.rotate_u16(speed)
-                    await asyncio.sleep_ms(pause_ms)
-            self.rotate_u16(target_u16)
-        else:
-            self.stop()
-
-    def halt(self):
-        """ set speed immediately to 0 but retain state """
-        self.rotate_u16(0)
-
-    def stop(self):
-        """ set state to 'S'; halt the motor """
-        self.set_state('S')
-        self.rotate_u16(0)
-
-    def set_logic_off(self):
-        """ turn off channel logic """
-        self.channel.set_logic_off()
-
-
-async def main():
-    """ test motor methods """
-
     params = {
-        'pwm_pins': (2, 3),
-        'bridge_pins': (4, 5, 6, 7),
+        'pwm_pins': (22, 17),
+        'bridge_pins': (21, 20, 19, 18),
         'run_btn': 20,
         'kill_btn': 22,
-        'pulse_f': 20_000,
-        'motor_min_pc': 5,
-        'motor_a_speed': {'F': 100, 'R': 95},
-        'motor_b_speed': {'F': 95, 'R': 95},
+        'pulse_f': 10_000,
+        'motor_start_pc': 5,
+        'motor_a_speed': {'F': 50, 'R': 50},
+        'motor_b_speed': {'F': 70, 'R': 50},
         'motor_hold_period': 5
     }
 
-    controller = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'])
-    motor_a = MotorCtrl(controller.channel_a, name='A', min_pc=params['motor_min_pc'])
+    board = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'],
+                  start_pc=params['motor_start_pc'])
+    a_speeds = {'F': pc_u16(params['motor_a_speed']['F']),
+                'R': pc_u16(params['motor_a_speed']['R'])
+                }
+    b_speeds = {'F': pc_u16(params['motor_b_speed']['F']),
+                'R': pc_u16(params['motor_b_speed']['R'])
+                }
+    
+    controller = MotorCtrl(board, a_speeds, b_speeds)
+    for _ in range(2):
+        print('Forward')
+        await controller.accel_a_b('F')
+        await asyncio.sleep(4)
+        print('Stop')
+        controller.stop_a_b()
+        await asyncio.sleep(3)
+        print('Reverse')
+        await controller.accel_a_b('R')
+        await asyncio.sleep(4)
+        print('Stop')
+        controller.stop_a_b()
+        await asyncio.sleep(3)
 
-    print('Forward')
-    motor_a.set_state('F')
-    motor_a.rotate_u16(motor_a.min_u16)
-    await asyncio.sleep(5)
-    motor_a.stop()
-    await asyncio.sleep(1)
-    print('Reverse')
-    motor_a.set_state('R')
-    motor_a.rotate_u16(motor_a.min_u16)
-    await asyncio.sleep(5)
-    print('Stop')
-    motor_a.stop()
+    controller.set_logic_off()
+    print('Controller logic turned off')
+    await asyncio.sleep_ms(500)
 
 
 if __name__ == '__main__':

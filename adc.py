@@ -2,7 +2,6 @@ import asyncio
 from micropython import const
 from machine import Pin, I2C, ADC
 from lcd_1602 import LcdApi
-from buttons import Button, HoldButton
 import json
 
 
@@ -43,48 +42,26 @@ class System:
         print(self.trigger)
         await asyncio.sleep_ms(200)
 
-
-    async def process_adc_event(btn, system_):
+    async def process_adc_event(self, btn, system_):
         """ coro: process system adc events """
         pass
 
 
 async def main():
 
-    def get_params(file_name):
-        """ return char pixel indices """
-        with open(file_name, 'r') as f:
-            retrieved = json.load(f)
-        return retrieved
-
-    def save_params(parameters, file_name):
-        """ return char pixel indices """
-        with open(file_name, 'w') as f:
-            json.dump(parameters, f)
-
-
-    filename = 'parameters.json'
-    params = get_params(filename)
-
-    buttons = {
-        'A': HoldButton(20, 'A'),
-        'B': HoldButton(21, 'B'),
-        'C': HoldButton(22, 'C')
+    params = {
+        'i2c_pins': {'sda': 0, 'scl': 1},
+        'cols_rows': {'cols': 16, 'rows': 2}
         }
 
-    system = System(buttons)
-
-
-    columns = 16
-    rows = 2
-    lcd = LcdApi(sda=0, scl=1)
+    lcd = LcdApi(params['i2c_pins'])
 
     adc_input_a = Adc(26)
     adc_input_b = Adc(27)
 
-    fwd_prev = params['a_fwd']
-    rev_prev = params['b_fwd']
-    track = 'A'    
+    track = 'A'
+    fwd_prev = 0
+    rev_prev = 0
     print(f'System initialised \n{params}')
 
     lcd.write_line(0, f'{track}')

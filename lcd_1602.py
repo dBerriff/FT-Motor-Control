@@ -6,7 +6,7 @@ from micropython import const
 import time
 
 
-class Lcd1602:
+class LcdApi:
     """ drive LCD1602 display """
     # not all constants are used
     I2C_ADDR = const(62)  # I2C Address
@@ -31,12 +31,13 @@ class Lcd1602:
     LINES_1 = const(0x00)
     DOTS_5x8 = const(0x00)
 
-    def __init__(self, pins, dim={'cols': 16, 'rows': 2}):
-        print(pins, dim)
+    def __init__(self, pins_, dim_=(16, 2)):
+        self.dim = {'cols': dim_[0], 'rows': dim_[1]}
+        print(pins_, dim_)
         i = 0 if pins['sda'] in (0, 4, 8, 12, 16, 20) else 1
         self.i2c = I2C(i, sda=Pin(pins['sda']), scl=Pin(pins['scl']), freq=400_000)
-        self._cols = dim['cols']
-        self._rows = dim['rows']
+        self._cols = self.dim['cols']
+        self._rows = self.dim['rows']
         self._show_fn = self.MODE_4BIT | self.LINES_1 | self.DOTS_5x8
         try:
             # address info only; ADDRESS used in code
