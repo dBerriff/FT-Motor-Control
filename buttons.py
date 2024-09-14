@@ -28,11 +28,8 @@ class Button:
             self.name = name
         else:
             self.name = str(pin)        
-        self.states = {'wait': self.name + self.WAIT,
-                       'click': self.name + self.CLICK
-                       }
         self.press_ev = asyncio.Event()  # starts cleared
-        self.state = self.states['wait']
+        self.state = self.WAIT
 
     async def poll_state(self):
         """ poll self for click event
@@ -44,14 +41,14 @@ class Button:
             pin_state = self._hw_in.value()
             if pin_state != prev_pin_state:
                 if not pin_state:
-                    self.state = self.states['click']
+                    self.state = self.CLICK
                     self.press_ev.set()
                 prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
 
     def clear_state(self):
-        """ set state to 0 """
-        self.state = self.states['wait']
+        """ set state to WAIT """
+        self.state = self.WAIT
         self.press_ev.clear()
 
 
@@ -63,7 +60,6 @@ class HoldButton(Button):
 
     def __init__(self, pin, name=''):
         super().__init__(pin, name)
-        self.states['hold'] = self.name + self.HOLD
 
     async def poll_state(self):
         """ poll self for click or hold events
@@ -80,9 +76,9 @@ class HoldButton(Button):
                     on_time = time_stamp
                 else:
                     if ticks_diff(time_stamp, on_time) < self.T_HOLD:
-                        self.state = self.states['click']
+                        self.state = self.CLICK
                     else:
-                        self.state = self.states['hold']
+                        self.state = self.HOLD
                     self.press_ev.set()
                 prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
@@ -99,7 +95,7 @@ async def main():
 
     # Plasma 2040 buttons
     buttons = {
-        '1': HoldButton(6, 'A'),
+        '1': Button(6, 'A'),
         '2': HoldButton(7, 'B'),
         '3': HoldButton(8, 'C'),
         '4': HoldButton(9, 'D')

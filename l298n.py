@@ -1,5 +1,5 @@
 # l298n.py
-""" drive a L298N motor controller board
+""" drive a L298N motor board board
     - developed using MicroPython v1.22.0
     - for Famous Trains Derby by David Jones
     - shared with MERG by David Jones member 9042
