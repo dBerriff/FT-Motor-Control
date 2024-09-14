@@ -122,24 +122,16 @@ async def main():
     # === user parameters
     # dictionary can be saved as JSON file
 
-    """params = {
-        'pwm_pins': (22, 17),
-        'bridge_pins': (21, 20, 19, 18),
-        'buttons': {'run_btn': 6, 'kill_btn': 22},
-        'pulse_f': 10_000,
-        'motor_start_pc': 5,
-        'motor_a_speed': {'F': 50, 'R': 50},
-        'motor_b_speed': {'F': 70, 'R': 50},
-        'motor_hold_period': 5
-    }"""
-
     params = {
+        # i/o
         'i2c_pins': {'sda': 0, 'scl': 1},
-        'cols_rows': (16, 2),
-        'buttons': {'run': 6, 'kill': 7},
-        'pwm_pins': (22, 17),
-        'bridge_pins': (21, 20, 19, 18),
+        'cols_rows': (16, 2),  # LCD 1602
+        'buttons': {'run': 6, 'kill': 9},
+        # L298N
+        'pwm_pins': (22, 17),  # ENA, ENB
+        'bridge_pins': (21, 20, 19, 18),  # IN1, IN2, IN3, IN4
         'pulse_f': 10_000,
+        # operating
         'motor_start_pc': 25,
         'motor_a_speed': {'F': 70, 'R': 50},
         'motor_b_speed': {'F': 70, 'R': 50},
@@ -149,7 +141,7 @@ async def main():
     lcd = LcdApi(params['i2c_pins'])
     if lcd.lcd_mode:
         print(f'LCD 1602 I2C address: {lcd.I2C_ADDR}')
-        lcd.write_line(0, f'FT IC V1.1')
+        lcd.write_line(0, f'FT Incline V1.2')
         lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
         await asyncio.sleep_ms(2_000)
     else:

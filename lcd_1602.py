@@ -34,8 +34,8 @@ class LcdApi:
     def __init__(self, pins_, dim_=(16, 2)):
         self.dim = {'cols': dim_[0], 'rows': dim_[1]}
         print(pins_, dim_)
-        i = 0 if pins['sda'] in (0, 4, 8, 12, 16, 20) else 1
-        self.i2c = I2C(i, sda=Pin(pins['sda']), scl=Pin(pins['scl']), freq=400_000)
+        i = 0 if pins_['sda'] in (0, 4, 8, 12, 16, 20) else 1
+        self.i2c = I2C(i, sda=Pin(pins_['sda']), scl=Pin(pins_['scl']), freq=400_000)
         self._cols = self.dim['cols']
         self._rows = self.dim['rows']
         self._show_fn = self.MODE_4BIT | self.LINES_1 | self.DOTS_5x8
