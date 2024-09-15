@@ -6,7 +6,7 @@
 """
 
 import asyncio
-from l298n import L298N
+from hb_l298n import L298N
 
 
 class MotorCtrl:
@@ -16,34 +16,35 @@ class MotorCtrl:
         self.board = board
         self.a_speeds = a_speeds
         self.b_speeds = b_speeds
-        self.start_u16 = start_u16  # start-up speed
+        self.start_u16 = start_u16
+        self.chan_a = board.channel_a
+        self.chan_b = board.channel_b
         self.states = board.STATES
         self.states_set = board.STATES_SET
-        self.run_set = {'F', 'R'}
-        self.speed_u16 = 0
         self.stop_a_b()
-        self.state = 'S'
+
+    def set_state(self, state, channel):
+        """ set channel h-pins  """
+        if channel == 'A':
+            self.board.channel_a.set_state(state)
+        elif channel == 'B':
+            self.board.channel_b.set_state(state)
 
     def set_state_a_b(self, state):
-        """ set channel state pins  """
+        """ set both channel h-pins  """
         if state in self.states_set:
             self.board.channel_a.set_state(state)
             self.board.channel_b.set_state(state)
-            self.state = state
-        else:
-            print(f'Unknown state: {state}')
 
     def stop_a_b(self):
         """ stop both motors """
         self.board.channel_a.stop()
         self.board.channel_b.stop()
-        self.state = 'S'
 
     def set_logic_off(self):
-        """ turn off channel logic """
+        """ turn off channel pins """
         self.board.channel_a.set_logic_off()
         self.board.channel_b.set_logic_off()
-        self.state = 'H'
 
     async def accel(self, channel, target_u16, period_ms):
         """ accelerate channel from current to target duty cycle """
@@ -65,10 +66,9 @@ class MotorCtrl:
 
     async def accel_a_b(self, direction, period_ms=1_000):
         """ accelerate both motors """
-        self.board.channel_a.set_state(direction)
-        self.board.channel_b.set_state(direction)
-        await asyncio.gather(self.accel(self.board.channel_a, self.a_speeds[direction], period_ms),
-                             self.accel(self.board.channel_b, self.b_speeds[direction], period_ms)
+        self.set_state_a_b(direction)
+        await asyncio.gather(self.accel(self.chan_a, self.a_speeds[direction], period_ms),
+                             self.accel(self.chan_b, self.b_speeds[direction], period_ms)
                              )
 
 

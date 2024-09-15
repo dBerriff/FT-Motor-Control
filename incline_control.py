@@ -8,7 +8,7 @@
 
 import asyncio
 import time
-from l298n import L298N
+from hb_l298n import L298N
 from motor_ctrl import MotorCtrl
 from buttons import Button, HoldButton
 from lcd_1602 import LcdApi
@@ -66,7 +66,7 @@ async def main():
 
     async def monitor_kill_btn(kill_btn_):
         """
-            monitor for kill-button hold
+            poll for kill-button hold
             - intended as emergency or end-of-day switch-off
             - main() should exit if this task ends
         """
@@ -77,18 +77,26 @@ async def main():
                 controller.set_logic_off()
                 lcd.clear()
                 lcd.write_line(0, 'End execution')
-                lcd.write_line(1, 'Turn motors off')
+                lcd.write_line(1, 'Track power OFF')
                 return
             await asyncio.sleep(1)
 
-    async def run_incline(demand_btn_, hold_ms=3_000, block_s=10):
+    async def run_incline(btns_, hold_ms, block_s):
         """ run the incline motors under button control """
 
+        async def countdown(period_s):
+            """ countdown period seconds """
+            while period_s:
+                lcd.write_line(1, f'{period_s:2d}')
+                await asyncio.sleep_ms(1000)
+                period_s -= 1
+
+        run_btn_ = btns_.run_btn
         state_ = 'S'
         while True:
             lcd.clear()
             lcd.write_line(0, "Waiting...")
-            await demand_btn_.press_ev.wait()
+            await run_btn_.press_ev.wait()
             lcd.clear()
             if state_ != 'F':
                 speed_string = (f'A:{controller.a_speeds['F']:05d} ' +
@@ -117,25 +125,27 @@ async def main():
                 state_ = 'R'
 
             # block button response
-            await asyncio.sleep(block_s)
-            demand_btn_.press_ev.clear()  # clear any intervening press
+            await countdown(block_s)
+            run_btn_.press_ev.clear()  # clear all intervening presses
 
-    # === default parameters
+    # === default parameters: ignored if JSON file found
 
     io_p = {
-        # i/o
         'i2c_pins': {'sda': 0, 'scl': 1},
-        'cols_rows': (16, 2),  # LCD 1602
-        'buttons': {'run': 6, 'kill': 9}}
+        'cols_rows': (16, 2),
+        'buttons': {'run': 6, 'kill': 9},
+        'block': 60}  # s
     l298n_p = {
         'pwm_pins': (22, 17),  # ENA, ENB
         'h_b_pins': (21, 20, 19, 18),  # IN1, IN2, IN3, IN4
-        'pulse_f': 10_000}
+        'pulse_f': 10_000}  # Hz
     motor_p = {   
-        'start_pc': 25,
+        'start_pc': 25,  # %
         'a_speed': {'F': 50, 'R': 50},
         'b_speed': {'F': 50, 'R': 50},
-        'hold_period': 5}
+        'hold': 5_000}  # ms
+
+    # ===
     
     io_p = read_cf('io_p.json', io_p)
     l298n_p = read_cf('l298n_p.json', l298n_p)
@@ -165,11 +175,12 @@ async def main():
     ctrl_buttons = InputButtons(io_p['buttons'])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
 
-    asyncio.create_task(run_incline(ctrl_buttons.run_btn))
+    asyncio.create_task(run_incline(ctrl_buttons, motor_p['hold'], io_p['block']))
+    print('Incline control active')
     await monitor_kill_btn(ctrl_buttons.kill_btn)
 
-    # kill button has been pressed; wait for motors to stop
-    time.sleep_ms(5000)
+    # display kill message
+    time.sleep_ms(3_000)
     lcd.clear()
 
 
@@ -178,4 +189,4 @@ if __name__ == '__main__':
         asyncio.run(main())
     finally:
         asyncio.new_event_loop()  # clear retained state
-        print('execution complete')
+        print('Execution complete')

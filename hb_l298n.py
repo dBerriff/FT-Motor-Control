@@ -1,4 +1,4 @@
-# l298n.py
+# hb_l298n.py
 """ drive a L298N motor board board
     - developed using MicroPython v1.22.0
     - for Famous Trains Derby by David Jones
@@ -20,10 +20,10 @@ class L298nChannel:
     # for pins (IN1, IN2) or (IN3, IN4)
     STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0)}
 
-    def __init__(self, pwm_pin, motor_pins_, frequency):
-        self.enable = PWM(Pin(pwm_pin), freq=frequency, duty_u16=0)
-        self.sw_0 = Pin(motor_pins_[0], Pin.OUT)
-        self.sw_1 = Pin(motor_pins_[1], Pin.OUT)
+    def __init__(self, en_pin, h_pins_, frequency):
+        self.enable = PWM(Pin(en_pin), freq=frequency, duty_u16=0)
+        self.sw_0 = Pin(h_pins_[0], Pin.OUT)
+        self.sw_1 = Pin(h_pins_[1], Pin.OUT)
         self.set_state('S')
         self.dc_u16 = 0
 
@@ -56,29 +56,21 @@ class L298nChannel:
 class L298N:
     """ control a generic L298N H-bridge board
         - 2 channels labelled A and B
-        - EN inputs (PWM) are labelled: ENA and ENB
-        - bridge-switch setting inputs are labelled (IN1, IN2) and (IN3, IN4)
-        - connections: Pico GPIO => L298N
-        -- pwm_pins => (ENA, ENB)
-        -- sw_pins  => (IN1, IN2, IN3, IN4)
+        - EN inputs (PWM) labelled: ENA and ENB
+        - bridge-logic inputs labelled: IN1, IN2, IN3, IN4
     """
 
-    # for pins (IN1, IN2) or (IN3, IN4)
-    STATES = {'S': (1, 1), 'F': (1, 0), 'R': (0, 1), 'H': (0, 0)}
+    STATES = L298nChannel.STATES
     STATES_SET = set(STATES.keys())
 
-    def __init__(self, pwm_pins_, sw_pins_, f, start_pc=25):
+    def __init__(self, en_pins_, h_pins_, f, start_pc=25):
 
         # channel A: PWM input to ENA; bridge-switching inputs to IN1 and IN2
         self.channel_a = L298nChannel(
-            pwm_pins_[0], (sw_pins_[0], sw_pins_[1]), f)
-
+            en_pins_[0], (h_pins_[0], h_pins_[1]), f)
         # channel B: PWM input to ENB; bridge-switching inputs to IN3 and IN4
         self.channel_b = L298nChannel(
-            pwm_pins_[1], (sw_pins_[2], sw_pins_[3]), f)
-        self.start_pc = start_pc
-
-        print(f'L298N initialised: {pwm_pins_}; {sw_pins_}; {self.channel_a.enable.freq()}')
+            en_pins_[1], (h_pins_[2], h_pins_[3]), f)
 
     def set_logic_off(self):
         """ set all control inputs off (0) """
