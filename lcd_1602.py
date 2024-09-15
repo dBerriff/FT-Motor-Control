@@ -33,7 +33,6 @@ class LcdApi:
 
     def __init__(self, pins_, dim_=(16, 2)):
         self.dim = {'cols': dim_[0], 'rows': dim_[1]}
-        print(pins_, dim_)
         i = 0 if pins_['sda'] in (0, 4, 8, 12, 16, 20) else 1
         self.i2c = I2C(i, sda=Pin(pins_['sda']), scl=Pin(pins_['scl']), freq=400_000)
         self._cols = self.dim['cols']
@@ -44,10 +43,9 @@ class LcdApi:
             address = self.i2c.scan()[0]
             if address != self.I2C_ADDR:
                 self.lcd_mode = False
-                print(f'I2C address found: {address}')
+                print(f'Other I2C address found: {address}')
             else:
                 self.lcd_mode = True
-                print(f'I2C address found: {address}')
         except IndexError:
             self.lcd_mode = False
             print('I2C address not found: print() mode')

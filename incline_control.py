@@ -12,6 +12,7 @@ from l298n import L298N
 from motor_ctrl import MotorCtrl
 from buttons import Button, HoldButton
 from lcd_1602 import LcdApi
+from config import read_cf
 
 
 class InputButtons:
@@ -90,8 +91,8 @@ async def main():
             await demand_btn_.press_ev.wait()
             lcd.clear()
             if state_ != 'F':
-                speed_string = (f'A:{controller.a_speeds['F']:02d} ' +
-                                f'B:{controller.b_speeds['F']:02d}')
+                speed_string = (f'A:{controller.a_speeds['F']:05d} ' +
+                                f'B:{controller.b_speeds['F']:05d} ')
                 lcd.write_line(0, 'Fwd accel ')
                 lcd.write_line(1, speed_string)
                                
@@ -99,19 +100,19 @@ async def main():
                 lcd.write_line(0, 'Fwd hold  ')
                 await asyncio.sleep_ms(hold_ms)
                 lcd.write_line(0, 'Fwd stop  ')
-                lcd.write_line(1, f'A:{0:02d} B:{0:02d}')
+                lcd.write_line(1, f'A:{0:05d} B:{0:05d} ')
                 controller.stop_a_b()
                 state_ = 'F'
             else:
                 lcd.write_line(0, 'Rev accel ')
                 lcd.write_line(1,
-                               f'A:{controller.a_speeds['R']:02d} ' +
-                               f'B:{controller.b_speeds['R']:02d}')
+                               f'A:{controller.a_speeds['R']:05d} ' +
+                               f'B:{controller.b_speeds['R']:05d} ')
                 await controller.accel_a_b('R')
                 lcd.write_line(0, 'Rev hold  ')
                 await asyncio.sleep_ms(hold_ms)
                 lcd.write_line(0, 'Rev stop  ')
-                lcd.write_line(1, f'A:{0:02d} B:{0:02d}')
+                lcd.write_line(1, f'A:{0:05d} B:{0:05d} ')
                 controller.stop_a_b()
                 state_ = 'R'
 
@@ -119,47 +120,49 @@ async def main():
             await asyncio.sleep(block_s)
             demand_btn_.press_ev.clear()  # clear any intervening press
 
-    # === user parameters
-    # dictionary can be saved as JSON file
+    # === default parameters
 
-    params = {
+    io_p = {
         # i/o
         'i2c_pins': {'sda': 0, 'scl': 1},
         'cols_rows': (16, 2),  # LCD 1602
-        'buttons': {'run': 6, 'kill': 9},
-        # L298N
+        'buttons': {'run': 6, 'kill': 9}}
+    l298n_p = {
         'pwm_pins': (22, 17),  # ENA, ENB
-        'bridge_pins': (21, 20, 19, 18),  # IN1, IN2, IN3, IN4
-        'pulse_f': 10_000,
-        # operating
-        'motor_start_pc': 25,
-        'motor_a_speed': {'F': 70, 'R': 50},
-        'motor_b_speed': {'F': 70, 'R': 50},
-        'motor_hold_period': 5
-    }
+        'h_b_pins': (21, 20, 19, 18),  # IN1, IN2, IN3, IN4
+        'pulse_f': 10_000}
+    motor_p = {   
+        'start_pc': 25,
+        'a_speed': {'F': 50, 'R': 50},
+        'b_speed': {'F': 50, 'R': 50},
+        'hold_period': 5}
+    
+    io_p = read_cf('io_p.json', io_p)
+    l298n_p = read_cf('l298n_p.json', l298n_p)
+    motor_p = read_cf('motor_p.json', motor_p)
+    print(f'io_p: {io_p}')
+    print(f'l298n_p: {l298n_p}')
+    print(f'motor_p: {motor_p}')
 
-    lcd = LcdApi(params['i2c_pins'])
+    lcd = LcdApi(io_p['i2c_pins'])
     if lcd.lcd_mode:
-        print(f'LCD 1602 I2C address: {lcd.I2C_ADDR}')
         lcd.write_line(0, f'FT Incline V1.2')
         lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
-        await asyncio.sleep_ms(2_000)
     else:
         print('LCD Display not found')
-    await asyncio.sleep_ms(2_000)
 
-    board = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'],
-                  start_pc=params['motor_start_pc'])
-    a_speeds = {'F': pc_u16(params['motor_a_speed']['F']),
-                'R': pc_u16(params['motor_a_speed']['R'])
+    board = L298N(l298n_p['pwm_pins'], l298n_p['h_b_pins'], l298n_p['pulse_f'],
+                  start_pc=motor_p['start_pc'])
+    a_speeds = {'F': pc_u16(motor_p['a_speed']['F']),
+                'R': pc_u16(motor_p['a_speed']['R'])
                 }
-    b_speeds = {'F': pc_u16(params['motor_b_speed']['F']),
-                'R': pc_u16(params['motor_b_speed']['R'])
+    b_speeds = {'F': pc_u16(motor_p['b_speed']['F']),
+                'R': pc_u16(motor_p['b_speed']['R'])
                 }
     
     controller = MotorCtrl(board, a_speeds, b_speeds)
 
-    ctrl_buttons = InputButtons(params['buttons'])
+    ctrl_buttons = InputButtons(io_p['buttons'])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
 
     asyncio.create_task(run_incline(ctrl_buttons.run_btn))
