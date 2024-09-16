@@ -11,13 +11,13 @@ def write_cf(filename, data):
         json.dump(data, f)
 
 
-def read_cf(filename, default):
+def read_cf(filename, default=None):
     """ return json file as dict or write default """
     if filename in os.listdir():
         with open(filename, 'r') as f:
             data = json.load(f)
-    else:
+        return data
+    elif default:
         print(f'Write default values to: {filename}')
-        data = default
         write_cf(filename, data)
-    return data
+        return default

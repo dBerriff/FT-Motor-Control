@@ -63,7 +63,7 @@ class L298N:
 
     STATES = L298nChannel.STATES
     STATES_SET = set(STATES.keys())
-    PinTuple = namedtuple('PinTuple', ('enA', 'in1', 'in2', 'in3', 'in4', 'enB'))
+    L298Pins = namedtuple('L298Pins', ('enA', 'in1', 'in2', 'in3', 'in4', 'enB'))
 
     def __init__(self, pins_, f):
 

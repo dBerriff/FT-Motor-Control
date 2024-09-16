@@ -50,11 +50,20 @@ class System:
 async def main():
 
     params = {
-        'i2c_pins': {'sda': 0, 'scl': 1},
+        'i2c_pins': (0, 1),
         'cols_rows': {'cols': 16, 'rows': 2}
         }
 
-    lcd = LcdApi(params['i2c_pins'])
+    lcd_pins = LcdApi.I2CTuple
+    pins = params['i2c_pins']
+    lcd = LcdApi(lcd_pins(*pins))
+    if lcd.lcd_mode:
+        lcd.write_line(0, f'ADC Test')
+        lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
+    else:
+        print('LCD Display not found')
+    await asyncio.sleep_ms(1000)
+
 
     adc_input_a = Adc(26)
     adc_input_b = Adc(27)

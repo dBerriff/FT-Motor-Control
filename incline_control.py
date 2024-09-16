@@ -127,43 +127,36 @@ async def main():
             # block button response
             await countdown(block_s)
             run_btn_.press_ev.clear()  # clear all intervening presses
-
-    # === default parameters: ignored if JSON file found
-
-    io_p = {
-        'i2c_pins': {'sda': 0, 'scl': 1},
-        'cols_rows': (16, 2),
-        'buttons': {'run': 6, 'kill': 9},
-        'block': 60}  # s
-    l298n_p = {
-        'pins': (22, 21, 20, 19, 18, 17),  # enA, in1, in2, in3, in4, enB
-        'pulse_f': 10_000}  # Hz
-    motor_p = {   
-        'start_pc': 25,  # %
-        'a_speed': {'F': 50, 'R': 50},
-        'b_speed': {'F': 50, 'R': 50},
-        'hold': 5_000}  # ms
-
-    # ===
     
-    io_p = read_cf('io_p.json', io_p)
-    l298n_p = read_cf('l298n_p.json', l298n_p)
-    motor_p = read_cf('motor_p.json', motor_p)
+    io_p = read_cf('io_p.json')
+    l298n_p = read_cf('l298n_p.json')
+    motor_p = read_cf('motor_p.json')
     print('JSON parameters:')
     print(f'io_p: {io_p}')
     print(f'l298n_p: {l298n_p}')
     print(f'motor_p: {motor_p}')
 
-    lcd = LcdApi(io_p['i2c_pins'])
+    # JSON dict -> namedtuple (dict is unsorted)
+    pins = LcdApi.I2CPins(sda=io_p['i2c_pins']['sda'],
+                          scl=io_p['i2c_pins']['scl']
+                          )
+    lcd = LcdApi(pins)
+
     if lcd.lcd_mode:
         lcd.write_line(0, f'FT Incline V1.2')
         lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
     else:
         print('LCD Display not found')
+    await asyncio.sleep_ms(1000)
 
-    board_pins = L298N.PinTuple
-    pins = board_pins(*l298n_p['pins'])
-    print(f'H-bridge pins: {pins}')
+    # JSON dict -> namedtuple (dict is unsorted)
+    pins = L298N.L298Pins(enA=l298n_p['pins']['enA'],
+                          in1=l298n_p['pins']['in1'],
+                          in2=l298n_p['pins']['in2'],
+                          in3=l298n_p['pins']['in3'],
+                          in4=l298n_p['pins']['in4'],
+                          enB=l298n_p['pins']['enB']
+                          )
     board = L298N(pins, l298n_p['pulse_f'])
 
     a_speeds = {'F': pc_u16(motor_p['a_speed']['F']),
