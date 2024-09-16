@@ -1,11 +1,12 @@
 # hb_l298n.py
-""" drive a L298N motor board board
+""" drive a L298N motor board
     - developed using MicroPython v1.22.0
     - for Famous Trains Derby by David Jones
     - shared with MERG by David Jones member 9042
 """
 
 from machine import Pin, PWM
+from collections import namedtuple
 
 
 class L298nChannel:
@@ -62,15 +63,16 @@ class L298N:
 
     STATES = L298nChannel.STATES
     STATES_SET = set(STATES.keys())
+    PinTuple = namedtuple('PinTuple', ('enA', 'in1', 'in2', 'in3', 'in4', 'enB'))
 
-    def __init__(self, en_pins_, h_pins_, f, start_pc=25):
+    def __init__(self, pins_, f):
 
         # channel A: PWM input to ENA; bridge-switching inputs to IN1 and IN2
         self.channel_a = L298nChannel(
-            en_pins_[0], (h_pins_[0], h_pins_[1]), f)
+            pins_.enA, (pins_.in1, pins_.in2), f)
         # channel B: PWM input to ENB; bridge-switching inputs to IN3 and IN4
         self.channel_b = L298nChannel(
-            en_pins_[1], (h_pins_[2], h_pins_[3]), f)
+            pins_.enB, (pins_.in3, pins_.in4), f)
 
     def set_logic_off(self):
         """ set all control inputs off (0) """

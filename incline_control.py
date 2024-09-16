@@ -136,8 +136,7 @@ async def main():
         'buttons': {'run': 6, 'kill': 9},
         'block': 60}  # s
     l298n_p = {
-        'pwm_pins': (22, 17),  # ENA, ENB
-        'h_b_pins': (21, 20, 19, 18),  # IN1, IN2, IN3, IN4
+        'pins': (22, 21, 20, 19, 18, 17),  # enA, in1, in2, in3, in4, enB
         'pulse_f': 10_000}  # Hz
     motor_p = {   
         'start_pc': 25,  # %
@@ -150,6 +149,7 @@ async def main():
     io_p = read_cf('io_p.json', io_p)
     l298n_p = read_cf('l298n_p.json', l298n_p)
     motor_p = read_cf('motor_p.json', motor_p)
+    print('JSON parameters:')
     print(f'io_p: {io_p}')
     print(f'l298n_p: {l298n_p}')
     print(f'motor_p: {motor_p}')
@@ -161,8 +161,11 @@ async def main():
     else:
         print('LCD Display not found')
 
-    board = L298N(l298n_p['pwm_pins'], l298n_p['h_b_pins'], l298n_p['pulse_f'],
-                  start_pc=motor_p['start_pc'])
+    board_pins = L298N.PinTuple
+    pins = board_pins(*l298n_p['pins'])
+    print(f'H-bridge pins: {pins}')
+    board = L298N(pins, l298n_p['pulse_f'])
+
     a_speeds = {'F': pc_u16(motor_p['a_speed']['F']),
                 'R': pc_u16(motor_p['a_speed']['R'])
                 }
@@ -176,7 +179,7 @@ async def main():
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll
 
     asyncio.create_task(run_incline(ctrl_buttons, motor_p['hold'], io_p['block']))
-    print('Incline control active')
+    print('\nIncline control active')
     await monitor_kill_btn(ctrl_buttons.kill_btn)
 
     # display kill message
