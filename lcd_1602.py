@@ -124,9 +124,10 @@ class LcdApi:
         else:
             print(f'({col}, {row}): {char}')
 
+
 def main():
     """ test of LCD """
-    lcd_pins = LcdApi.I2CTuple
+    lcd_pins = LcdApi.I2CPins
     pins = lcd_pins(0, 1)
     print(pins)
     lcd = LcdApi(pins)
@@ -136,6 +137,7 @@ def main():
         lcd.write_line(1, f'{pins}')
     else:
         print('LCD Display not found')
+
 
 if __name__ == '__main__':
     try:
