@@ -127,14 +127,13 @@ class LcdApi:
 
 def main():
     """ test of LCD """
-    lcd_pins = LcdApi.I2CPins
-    pins = lcd_pins(0, 1)
+    pins = LcdApi.I2CPins(0, 1)
     print(pins)
     lcd = LcdApi(pins)
 
     if lcd.lcd_mode:
         lcd.write_line(0, f'LCD Test')
-        lcd.write_line(1, f'{pins}')
+        lcd.write_line(1, f'sda: {pins.sda} scl: {pins.scl}')
     else:
         print('LCD Display not found')
 
