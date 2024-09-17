@@ -1,4 +1,4 @@
-# motor_control.py
+# incline_control.py
 """ run 2 x dc motors under PWM control
     - developed using MicroPython v1.22.0
     - user button-press initiates motor movement
@@ -74,7 +74,7 @@ async def main():
             kill_btn_.press_ev.clear()
             await kill_btn_.press_ev.wait()
             if kill_btn_.state == kill_btn_.HOLD:
-                controller.set_logic_off()
+                controller.stop_a_b()
                 lcd.clear()
                 lcd.write_line(0, 'End execution')
                 lcd.write_line(1, 'Track power OFF')
@@ -136,12 +136,7 @@ async def main():
     print(f'l298n_p: {l298n_p}')
     print(f'motor_p: {motor_p}')
 
-    # JSON dict -> namedtuple (dict is unsorted)
-    pins = LcdApi.I2CPins(sda=io_p['i2c_pins']['sda'],
-                          scl=io_p['i2c_pins']['scl']
-                          )
-    lcd = LcdApi(pins)
-
+    lcd = LcdApi(io_p['i2c_pins'])
     if lcd.lcd_mode:
         lcd.write_line(0, f'FT Incline V1.2')
         lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
@@ -149,16 +144,7 @@ async def main():
         print('LCD Display not found')
     await asyncio.sleep_ms(1000)
 
-    # JSON dict -> namedtuple (dict is unsorted)
-    pins = L298N.L298Pins(enA=l298n_p['pins']['enA'],
-                          in1=l298n_p['pins']['in1'],
-                          in2=l298n_p['pins']['in2'],
-                          in3=l298n_p['pins']['in3'],
-                          in4=l298n_p['pins']['in4'],
-                          enB=l298n_p['pins']['enB']
-                          )
-    board = L298N(pins, l298n_p['pulse_f'])
-
+    board = L298N(l298n_p['pins'], l298n_p['pulse_f'])
     a_speeds = {'F': pc_u16(motor_p['a_speed']['F']),
                 'R': pc_u16(motor_p['a_speed']['R'])
                 }
