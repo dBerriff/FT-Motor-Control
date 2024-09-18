@@ -19,5 +19,13 @@ def read_cf(filename, default=None):
         return data
     elif default:
         print(f'Write default values to: {filename}')
-        write_cf(filename, data)
+        write_cf(filename, default)
         return default
+
+
+def pc_u16(percentage):
+    """ convert positive percentage to 16-bit equivalent """
+    if 0 < percentage <= 100:
+        return 0xffff * percentage // 100
+    else:
+        return 0

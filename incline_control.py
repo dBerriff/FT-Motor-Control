@@ -12,7 +12,7 @@ from hb_l298n import L298N
 from motor_ctrl import MotorCtrl
 from buttons import Button, HoldButton
 from lcd_1602 import LcdApi
-from config import read_cf
+from config import read_cf, pc_u16
 
 
 class InputButtons:
@@ -29,40 +29,8 @@ class InputButtons:
         asyncio.create_task(self.kill_btn.poll_state())
 
 
-class CtrlState:
-    """ set states: Off, Run, Cal """
-
-    def __init__(self):
-        pass
-
-    async def set_off(self):
-        """ set state off """
-        pass
-
-    async def set_run(self):
-        """ set state run """
-        pass
-
-    async def set_cal(self):
-        """ set state cal (calibrate) """
-        pass
-
-    @staticmethod
-    async def no_t():
-        """ coro: no transition """
-        await asyncio.sleep_ms(1)
-        # no change in state
-
-
 async def main():
     """ test of motor control """
-
-    def pc_u16(percentage):
-        """ convert positive percentage to 16-bit equivalent """
-        if 0 < percentage <= 100:
-            return 0xffff * percentage // 100
-        else:
-            return 0
 
     async def monitor_kill_btn(kill_btn_):
         """
@@ -74,7 +42,7 @@ async def main():
             kill_btn_.press_ev.clear()
             await kill_btn_.press_ev.wait()
             if kill_btn_.state == kill_btn_.HOLD:
-                controller.stop_a_b()
+                controller.halt_a_b()
                 lcd.clear()
                 lcd.write_line(0, 'End execution')
                 lcd.write_line(1, 'Track power OFF')
@@ -86,6 +54,7 @@ async def main():
 
         async def countdown(period_s):
             """ countdown period seconds """
+            period_s = int(period_s)
             while period_s:
                 lcd.write_line(1, f'{period_s:2d}')
                 await asyncio.sleep_ms(1000)
@@ -104,37 +73,34 @@ async def main():
                 lcd.write_line(0, 'Fwd accel ')
                 lcd.write_line(1, speed_string)
                                
-                await controller.accel_a_b('F')
+                await controller.start_a_b('F')
                 lcd.write_line(0, 'Fwd hold  ')
                 await asyncio.sleep_ms(hold_ms)
                 lcd.write_line(0, 'Fwd stop  ')
                 lcd.write_line(1, f'A:{0:05d} B:{0:05d} ')
-                controller.stop_a_b()
+                controller.stop_a_b('F')
                 state_ = 'F'
             else:
                 lcd.write_line(0, 'Rev accel ')
                 lcd.write_line(1,
                                f'A:{controller.a_speeds['R']:05d} ' +
                                f'B:{controller.b_speeds['R']:05d} ')
-                await controller.accel_a_b('R')
+                await controller.start_a_b('R')
                 lcd.write_line(0, 'Rev hold  ')
                 await asyncio.sleep_ms(hold_ms)
                 lcd.write_line(0, 'Rev stop  ')
                 lcd.write_line(1, f'A:{0:05d} B:{0:05d} ')
-                controller.stop_a_b()
+                controller.stop_a_b('R')
                 state_ = 'R'
 
             # block button response
             await countdown(block_s)
             run_btn_.press_ev.clear()  # clear all intervening presses
     
+    # read in operating parameters
     io_p = read_cf('io_p.json')
     l298n_p = read_cf('l298n_p.json')
     motor_p = read_cf('motor_p.json')
-    print('JSON parameters:')
-    print(f'io_p: {io_p}')
-    print(f'l298n_p: {l298n_p}')
-    print(f'motor_p: {motor_p}')
 
     lcd = LcdApi(io_p['i2c_pins'])
     if lcd.lcd_mode:
@@ -143,6 +109,7 @@ async def main():
     else:
         print('LCD Display not found')
     await asyncio.sleep_ms(1000)
+    lcd.clear()
 
     board = L298N(l298n_p['pins'], l298n_p['pulse_f'])
     a_speeds = {'F': pc_u16(motor_p['a_speed']['F']),

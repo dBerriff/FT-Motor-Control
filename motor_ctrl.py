@@ -7,6 +7,8 @@
 
 import asyncio
 from hb_l298n import L298N
+from lcd_1602 import LcdApi
+from config import read_cf, pc_u16
 
 
 class MotorCtrl:
@@ -21,7 +23,7 @@ class MotorCtrl:
         self.chan_b = board.channel_b
         self.states = board.STATES
         self.states_set = board.STATES_SET
-        self.stop_a_b()
+        self.halt_a_b()
 
     def set_state(self, state, channel):
         """ set channel h-pins  """
@@ -30,94 +32,91 @@ class MotorCtrl:
         elif channel == 'B':
             self.board.channel_b.set_state(state)
 
+    async def change_speed(self, channel, current_u16, target_u16, t_ms, n_steps):
+        """ accelerate channel from current to target duty cycle """
+        step = (target_u16 - current_u16) // n_steps
+        step_ms = t_ms // n_steps
+        for dc_u16 in range(self.start_u16, target_u16, step):
+            channel.set_dc_u16(dc_u16)
+            await asyncio.sleep_ms(step_ms)
+        channel.set_dc_u16(target_u16)
+
+    async def start(self, channel, target_u16, period_ms, n_steps=25):
+        """ accelerate channel from 0 to target duty cycle """
+        await self.change_speed(channel, self.start_u16, target_u16, period_ms, n_steps)
+
+    async def stop(self, channel, current_u16, period_ms, n_steps=25):
+        """ decelerate channel from current duty cycle to 0 """
+        await self.change_speed(channel, current_u16, 0, period_ms, n_steps)
+
     def set_state_a_b(self, state):
         """ set both channel h-pins  """
         if state in self.states_set:
             self.board.channel_a.set_state(state)
             self.board.channel_b.set_state(state)
 
-    def stop_a_b(self):
+    def halt_a_b(self):
         """ stop both motors """
         self.board.channel_a.stop()
         self.board.channel_b.stop()
 
-    def set_logic_off(self):
-        """ turn off channel pins """
-        self.board.channel_a.set_logic_off()
-        self.board.channel_b.set_logic_off()
-
-    async def accel(self, channel, target_u16, period_ms):
-        """ accelerate channel from current to target duty cycle """
-        current_dc = channel.dc_u16
-        delta = target_u16 - current_dc
-        if delta == 0:
-            return
-        # start from rest?
-        if current_dc == 0:
-            current_dc = self.start_u16
-            delta -= current_dc
-        n_steps = 25
-        step = delta // n_steps
-        pause_ms = period_ms // n_steps
-        for dc_u16 in range(current_dc, target_u16, step):
-            channel.set_dc_u16(dc_u16)
-            await asyncio.sleep_ms(pause_ms)
-        channel.set_dc_u16(target_u16)
-
-    async def accel_a_b(self, direction, period_ms=1_000):
+    async def start_a_b(self, direction, period_ms=1_000):
         """ accelerate both motors """
         self.set_state_a_b(direction)
-        await asyncio.gather(self.accel(self.chan_a, self.a_speeds[direction], period_ms),
-                             self.accel(self.chan_b, self.b_speeds[direction], period_ms)
+        await asyncio.gather(self.start(self.chan_a, self.a_speeds[direction], period_ms),
+                             self.start(self.chan_b, self.b_speeds[direction], period_ms)
+                             )
+
+    async def stop_a_b(self, direction, period_ms=1_000):
+        """ accelerate both motors """
+        await asyncio.gather(self.stop(self.chan_a, self.a_speeds[direction], period_ms),
+                             self.stop(self.chan_b, self.b_speeds[direction], period_ms)
                              )
 
 
 async def main():
     """ test motor methods """
     
-    def pc_u16(percentage):
-        """ convert positive percentage to 16-bit equivalent """
-        if 0 < percentage <= 100:
-            return 0xffff * percentage // 100
-        else:
-            return 0
+    io_p = read_cf('io_p.json')
+    l298n_p = read_cf('l298n_p.json')
+    motor_p = read_cf('motor_p.json')
+    lcd = LcdApi(io_p['i2c_pins'])
+    if lcd.lcd_mode:
+        lcd.write_line(0, f'FT Timed V1.0')
+        lcd.write_line(1, f'I2C addr: {lcd.I2C_ADDR}')
+    else:
+        print('LCD Display not found')
+    await asyncio.sleep_ms(2_000)
+    lcd.clear()
 
-    params = {
-        'pwm_pins': (22, 17),
-        'bridge_pins': (21, 20, 19, 18),
-        'pulse_f': 10_000,
-        'motor_start_pc': 25,
-        'motor_a_speed': {'F': 70, 'R': 50},
-        'motor_b_speed': {'F': 70, 'R': 50},
-        'motor_hold_period': 5
-    }
-
-    board = L298N(params['pwm_pins'], params['bridge_pins'], params['pulse_f'],
-                  start_pc=params['motor_start_pc'])
-    a_speeds = {'F': pc_u16(params['motor_a_speed']['F']),
-                'R': pc_u16(params['motor_a_speed']['R'])
+    board = L298N(l298n_p['pins'], l298n_p['pulse_f'])
+    a_speeds = {'F': pc_u16(motor_p['a_speed']['F']),
+                'R': pc_u16(motor_p['a_speed']['R'])
                 }
-    b_speeds = {'F': pc_u16(params['motor_b_speed']['F']),
-                'R': pc_u16(params['motor_b_speed']['R'])
+    b_speeds = {'F': pc_u16(motor_p['b_speed']['F']),
+                'R': pc_u16(motor_p['b_speed']['R'])
                 }
     
+    long_pause = 5  # s
     controller = MotorCtrl(board, a_speeds, b_speeds)
-    for _ in range(2):
-        print('Forward')
-        await controller.accel_a_b('F')
+    for _ in range(1):
+        lcd.write_line(0, f'Forward')
+        await controller.start_a_b('F')
         await asyncio.sleep(4)
-        print('Stop')
-        controller.stop_a_b()
+        lcd.write_line(0, f'Stop')
+        await controller.stop_a_b('F')
         await asyncio.sleep(3)
-        print('Reverse')
-        await controller.accel_a_b('R')
+        lcd.write_line(0, f'Reverse')
+        await controller.start_a_b('R')
         await asyncio.sleep(4)
-        print('Stop')
-        controller.stop_a_b()
-        await asyncio.sleep(3)
+        lcd.write_line(0, f'Stop')
+        await controller.stop_a_b('R')
+        await asyncio.sleep(long_pause)
 
-    controller.set_logic_off()
+    controller.halt_a_b()
     print('Controller logic turned off')
+    await asyncio.sleep_ms(500)
+    lcd.clear()
     await asyncio.sleep_ms(500)
 
 
