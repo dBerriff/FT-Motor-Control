@@ -96,7 +96,7 @@ async def main():
             # block button response
             await countdown(block_s)
             run_btn_.press_ev.clear()  # clear all intervening presses
-    
+
     # read in operating parameters
     io_p = read_cf('io_p.json')
     l298n_p = read_cf('l298n_p.json')
@@ -118,8 +118,9 @@ async def main():
     b_speeds = {'F': pc_u16(motor_p['b_speed']['F']),
                 'R': pc_u16(motor_p['b_speed']['R'])
                 }
-    
+
     controller = MotorCtrl(board, a_speeds, b_speeds)
+    help(controller)
 
     ctrl_buttons = InputButtons(io_p['buttons'])
     asyncio.create_task(ctrl_buttons.poll_buttons())  # buttons self-poll

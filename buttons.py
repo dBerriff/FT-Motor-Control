@@ -93,9 +93,8 @@ class HoldButton(Button):
 async def main():
     """ coro: test Button and HoldButton classes """
 
-    # Plasma 2040 buttons
     buttons = {
-        '1': Button(6, 'A'),
+        '1': HoldButton(6, 'A'),
         '2': HoldButton(7, 'B'),
         '3': HoldButton(8, 'C'),
         '4': HoldButton(9, 'D')

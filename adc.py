@@ -2,6 +2,7 @@ import asyncio
 from micropython import const
 from machine import Pin, I2C, ADC
 from lcd_1602 import LcdApi
+from buttons import Button, HoldButton
 import json
 
 
@@ -17,41 +18,50 @@ class Adc:
         return self.adc.read_u16() // self.pc_factor
 
 
-class System:
-    """ holding class for System """
-    
-    def __init__(self, buttons_):
-        self.trigger = None
-        self.buttons = buttons_
-        # create tasks to test each button
-        for b in buttons_:
-            asyncio.create_task(buttons_[b].poll_event())  # buttons_ self-poll
-            asyncio.create_task(self.process_event(buttons_[b]))  # respond to event
-
-    async def process_event(self, btn):
-        """ coro: process system button events """
-        while True:
-            await btn.press_ev.wait()
-            self.buttons[btn.name].state = btn.state
-            btn.clear_state()
-            print(self.buttons)
-
-    async def st_logic(self, btn_state):
-        """ respond to btn_ state """
-        self.trigger = btn_state
-        print(self.trigger)
-        await asyncio.sleep_ms(200)
-
-    async def process_adc_event(self, btn, system_):
-        """ coro: process system adc events """
-        pass
-
-
 async def main():
+
+    async def keep_alive():
+        """ coro: to be awaited """
+        t = 0
+        while t < 60:
+            await asyncio.sleep(1)
+            t += 1
+
+    async def process_btn_event(btn):
+        """ coro: passes button events to the system """
+        while True:
+            # wait until press_ev is set
+            await btn.press_ev.wait()
+            lcd.write_line(0, f'{btn.name}{btn.state}')
+            btn.clear_state()
+
+    async def process_adc(adc_a, adc_b):
+        """ coro: poll adc inputs """
+        fwd_prev = -1
+        rev_prev = -1        
+        while True:
+            fwd_pc = adc_a.get_pc()
+            rev_pc = adc_b.get_pc()
+            if fwd_pc != fwd_prev or rev_pc != rev_prev:
+                lcd.write_line(1, f'F: {fwd_pc:02d}%  R: {rev_pc:02d}%')
+                fwd_prev = fwd_pc
+                rev_prev = rev_pc
+            await asyncio.sleep_ms(200)
+
+    buttons = (Button(6, 'A'),
+               HoldButton(7, 'B'),
+               HoldButton(8, 'C'),
+               HoldButton(9, 'D')
+               )
+
+    # create tasks to test each button
+    for b in buttons:
+        asyncio.create_task(b.poll_state())  # buttons self-poll
+        asyncio.create_task(process_btn_event(b))  # respond to event
 
     params = {
         'i2c_pins': {'sda': 0, 'scl': 1},
-        'cols_rows': {'cols': 16, 'rows': 2}
+        'cols_rows': {'cols': 16, 'rows': 2},
         }
 
     lcd = LcdApi(params['i2c_pins'])
@@ -62,24 +72,13 @@ async def main():
         print('LCD Display not found')
     await asyncio.sleep_ms(1000)
 
+    adc_in_a = Adc(26)
+    adc_in_b = Adc(27)
+    asyncio.create_task(process_adc(adc_in_a, adc_in_b))
 
-    adc_input_a = Adc(26)
-    adc_input_b = Adc(27)
-
-    track = 'A'
-    fwd_prev = 0
-    rev_prev = 0
     print(f'System initialised \n{params}')
 
-    lcd.write_line(0, f'{track}')
-    while True:
-        fwd_pc = adc_input_a.get_pc()
-        rev_pc = adc_input_b.get_pc()
-        if fwd_pc != fwd_prev or rev_pc != rev_prev:
-            lcd.write_line(1, f'F: {fwd_pc:02d}%  R: {rev_pc:02d}%')
-            fwd_prev = fwd_pc
-            rev_prev = rev_pc
-        await asyncio.sleep_ms(200)
+    await keep_alive()  # run scheduler until keep_alive() times out
 
 
 if __name__ == '__main__':
